@@ -1,0 +1,34 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ldb-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-01",
+  "observability": { "enabled": true },
+
+  // Öffentliche Einstellungen. Geheimnisse (PAIRING_CODE) kommen per `wrangler secret put`, nie hierher.
+  "vars": {
+    "REGISTRATION_OPEN": "true"
+  },
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "ldb",
+      // Nach `npx wrangler d1 create ldb` hier die ausgegebene ID eintragen (keine geheime Angabe).
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ],
+
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "ldb-media"
+    }
+  ],
+
+  // Stündlich abgelaufene Fotos und Notizen physisch löschen.
+  "triggers": {
+    "crons": ["7 * * * *"]
+  }
+}

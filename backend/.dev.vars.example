@@ -1,0 +1,2 @@
+# Kopieren nach .dev.vars (wird nicht eingecheckt) für `npm run dev`.
+PAIRING_CODE=lokaler-test-code-123

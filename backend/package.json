@@ -1,0 +1,18 @@
+{
+  "name": "ldb-api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "db:migrate:local": "wrangler d1 migrations apply ldb --local",
+    "db:migrate:remote": "wrangler d1 migrations apply ldb --remote",
+    "smoke": "node scripts/smoke.mjs"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261122.2",
+    "typescript": "^5.9.0",
+    "wrangler": "^4.166.0"
+  }
+}
