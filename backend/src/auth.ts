@@ -41,12 +41,14 @@ export async function authenticate(req: Request, env: Env): Promise<Caller> {
 /** POST /v1/devices/register  { pairing_code, person: "a"|"b", device_name } */
 export async function registerDevice(req: Request, env: Env): Promise<Response> {
   if (env.REGISTRATION_OPEN !== "true") throw new HttpError(403, "Kopplung ist geschlossen");
-  if (!env.PAIRING_CODE || env.PAIRING_CODE.length < 12) {
+  // trim(): per Pipe gesetzte Secrets enthalten unter Windows oft einen Zeilenumbruch am Ende.
+  const pairingCode = env.PAIRING_CODE?.trim();
+  if (!pairingCode || pairingCode.length < 12) {
     throw new HttpError(500, "PAIRING_CODE ist nicht (ausreichend lang) gesetzt");
   }
 
   const body = await readJson<{ pairing_code?: unknown; person?: unknown; device_name?: unknown }>(req);
-  if (typeof body.pairing_code !== "string" || !(await safeEqual(body.pairing_code, env.PAIRING_CODE))) {
+  if (typeof body.pairing_code !== "string" || !(await safeEqual(body.pairing_code.trim(), pairingCode))) {
     throw new HttpError(403, "Kopplungscode falsch");
   }
   if (body.person !== "a" && body.person !== "b") throw new HttpError(400, "person muss a oder b sein");

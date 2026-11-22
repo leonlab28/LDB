@@ -14,8 +14,8 @@
     {
       "binding": "DB",
       "database_name": "ldb",
-      // Nach `npx wrangler d1 create ldb` hier die ausgegebene ID eintragen (keine geheime Angabe).
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      // ID der D1-Datenbank (keine geheime Angabe).
+      "database_id": "7241c63b-b06e-447e-a3df-25728aa5be36",
       "migrations_dir": "migrations"
     }
   ],
