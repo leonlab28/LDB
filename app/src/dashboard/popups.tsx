@@ -562,7 +562,7 @@ export function SettingsPopup({
       {__DEV__ ? (
         <>
           <Label style={{ marginTop: 8 }}>Entwicklung (nur in Expo Go)</Label>
-          <Sub>Vorschau: „Drüben“ zeigt deine eigenen Inhalte so, wie dein Freund sie sieht. Es wird nichts als gesehen markiert.</Sub>
+          <Sub>Vorschau: Die Seite deines Freundes zeigt deine eigenen Inhalte so, wie dein Freund sie sieht. Es wird nichts als gesehen markiert.</Sub>
           <View style={styles.wrap}>
             <Chip label="Aus" selected={!mirror} onPress={() => onMirrorChange(false)} />
             <Chip label="Vorschau an" selected={mirror} onPress={() => onMirrorChange(true)} />

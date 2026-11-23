@@ -15,6 +15,7 @@ import { Backdrop } from './design/Glass';
 import { SkinProvider } from './design/skin';
 import { C, F } from './design/tokens';
 import { Api, ApiError } from './lib/api';
+import { cityOf } from './lib/time';
 import { clearSession, loadSession, type Session } from './lib/session';
 import type { View as LdbView } from './lib/types';
 import { PairingScreen } from './screens/PairingScreen';
@@ -153,6 +154,11 @@ function Main({ session, onLogout }: { session: Session; onLogout: () => void })
     open: setPopup,
   };
 
+  // Umschalter: „Ich“ und die Stadt, in der der andere gerade ist (aus seiner Zeitzone).
+  const partnerView = mirror ? me : partner;
+  const partnerProfile = partnerView?.profile && partnerView.profile !== 'locked' ? partnerView.profile : null;
+  const partnerLabel = partnerProfile?.tz ? cityOf(partnerProfile.tz) : partnerProfile?.name || 'Partner';
+
   const corner = (
     <View style={styles.corner}>
       {mode === 'me' ? (
@@ -163,7 +169,7 @@ function Main({ session, onLogout }: { session: Session; onLogout: () => void })
       <View style={styles.switch}>
         {(
           [
-            ['partner', 'Drüben'],
+            ['partner', partnerLabel],
             ['me', 'Ich'],
           ] as const
         ).map(([k, l]) => (
