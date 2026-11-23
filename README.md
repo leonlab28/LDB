@@ -4,34 +4,38 @@ Private iPhone-App für zwei: Uhrzeit und Wetter beim anderen, Ampel-Status, Spr
 
 ```
 backend/   Cloudflare Worker (TypeScript) + D1 + R2 + Cron
-ios/       SwiftUI-App (Projekt wird mit XcodeGen erzeugt)
+app/       iPhone-App (Expo / React Native, TypeScript)
 docs/      Anleitungen
 ```
+
+## Sicherheit
+
+Alle Inhalte sind **Ende-zu-Ende verschlüsselt**. Die iPhones teilen ein Geheimnis, das nie beim Server landet; Cloudflare speichert nur Chiffrate und sieht keine Namen, Texte, Fotos, Sprachnachrichten oder Standorte. Was der Server trotzdem sieht und wo die echten Schwachstellen liegen: [docs/encryption.md](docs/encryption.md).
 
 ## Backend
 
 - Einrichtung Schritt für Schritt: [docs/cloudflare-setup.md](docs/cloudflare-setup.md)
-- Anmeldung ohne Konten: jedes Gerät koppelt sich einmal mit einem Kopplungscode und bekommt einen eigenen Schlüssel. Der Server speichert nur dessen SHA-256-Hash.
+- Anmeldung ohne Konten: jedes Gerät koppelt sich einmal per Kopplungslink und bekommt einen eigenen Geräteschlüssel. Der Server speichert nur dessen SHA-256-Hash.
 - 24-h-Regel: Jede Abfrage blendet Abgelaufenes sofort aus; der stündliche Cron löscht es aus D1 und R2.
-- Standort wird auf ~1 km gerundet gespeichert, ohne Historie. Pausieren löscht den letzten Punkt.
+- Der Server nimmt nur Umschläge an (verschlüsselte Daten im LDB-Format) und lehnt Klartext ab.
 
 ### API (alles außer `health` und `register` braucht `Authorization: Bearer <Geräteschlüssel>`)
+
+`<Umschlag>` = verschlüsselte Daten nach [docs/encryption.md](docs/encryption.md). IDs sind UUIDs, die das Gerät erzeugt.
 
 | Methode | Pfad | Zweck |
 |---|---|---|
 | GET | `/v1/health` | Lebenszeichen |
-| POST | `/v1/devices/register` | Gerät koppeln `{pairing_code, person: "a"\|"b", device_name}` |
-| GET | `/v1/me` · `/v1/partner` | Gesamtstand für Bearbeiten- bzw. Anzeige-Ansicht |
-| PUT | `/v1/me/profile` | Name, Zeitzone (IANA-ID) |
-| PUT | `/v1/me/traffic-light` | Wochenplan, manuelle Überschreibung, Emoji, Notiz |
-| PUT | `/v1/me/location` | `{lat, lon}` oder `{paused: true}` |
-| PUT / DELETE | `/v1/me/voice` | Sprach-Slot belegen (multipart) / zurückholen |
-| GET / POST | `/v1/partner/voice` · `/listened` | Abspielen / als angehört markieren |
-| POST / DELETE | `/v1/me/photos` · `/:id` | Foto hochladen (multipart, max. 30/Tag) / löschen |
+| POST | `/v1/devices/register` | Gerät koppeln `{pairing_code, person: "a"\|"b", device_name?}` |
+| GET | `/v1/me` · `/v1/partner` | Gesamtstand (Zustände, Sprach-Slot, Fotos, Notizen) als Umschläge |
+| PUT / DELETE | `/v1/me/state/:kind` | `profile` · `light` · `location`, Rumpf `{data: <Umschlag>}` |
+| PUT / DELETE | `/v1/me/voice/:id` · `/v1/me/voice` | Sprach-Slot belegen (Rumpf roh, Header `X-LDB-Meta`) / zurückholen |
+| GET / POST | `/v1/partner/voice/:id` · `/listened` | Abspielen / als angehört markieren |
+| PUT / DELETE | `/v1/me/photos/:id` · `/thumb` | Foto bzw. Vorschau hochladen (roh, Foto mit `X-LDB-Meta`, max. 30/Tag) / löschen |
 | GET / POST | `/v1/partner/photos/:id` · `/seen` · `/keep` | Foto laden (`?size=thumb`) / gesehen / Herz |
-| POST / PUT / DELETE | `/v1/me/notes` · `/:id` | Post-it anheften / ersetzen oder abhaken / löschen |
+| POST · PUT / DELETE | `/v1/me/notes` · `/:id` | Post-it `{id, data}` anheften · `{data, renew}` ändern / löschen |
 | POST | `/v1/partner/notes/:id/seen` | 👀 |
 
-## iOS
+## App
 
-Siehe [ios/README.md](ios/README.md). Braucht einen Mac mit Xcode.
+Siehe [app/README.md](app/README.md). Expo (React Native, TypeScript): Entwicklung unter Windows, Test auf dem iPhone mit Expo Go, iOS-Builds und TestFlight über EAS in der Cloud. Kein Mac nötig.
