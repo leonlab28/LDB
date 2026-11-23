@@ -17,6 +17,20 @@ async function jpegFrom(uri: string, longSide: number, current: { width: number;
   return { bytes: b64.decode(out.base64), width: out.width, height: out.height };
 }
 
+// Qualität: Vollbild scharf auf Retina-Displays, Vorschau scharf genug für die große Foto-Kachel (bis ~3x).
+// Server-Grenzen: Vollbild 4 MB, Vorschau 512 KB (jeweils plus Umschlag). Ist eine Stufe zu groß, wird stärker komprimiert.
+const FULL = { side: 2560, steps: [0.88, 0.8, 0.7, 0.6], max: 3.8 * 1024 * 1024 };
+const THUMB = { side: 1200, steps: [0.82, 0.72, 0.62, 0.5], max: 480 * 1024 };
+
+async function encode(uri: string, current: { width: number; height: number }, spec: typeof FULL) {
+  let out = await jpegFrom(uri, spec.side, current, spec.steps[0]);
+  for (const q of spec.steps.slice(1)) {
+    if (out.bytes.length <= spec.max) break;
+    out = await jpegFrom(uri, spec.side, current, q);
+  }
+  return out;
+}
+
 /**
  * Öffnet direkt die Mehrfachauswahl (bis 10) und lädt nacheinander verschlüsselt hoch.
  * Gibt die Anzahl geteilter Fotos zurück; 0 bei Abbruch.
@@ -39,8 +53,8 @@ export async function pickAndSharePhotos(
   onProgress(0, total);
   try {
     for (const asset of res.assets) {
-      const full = await jpegFrom(asset.uri, 2048, asset, 0.8);
-      const thumb = await jpegFrom(asset.uri, 360, asset, 0.6);
+      const full = await encode(asset.uri, asset, FULL);
+      const thumb = await encode(asset.uri, asset, THUMB);
       const id = await api.uploadPhoto(full.bytes, thumb.bytes, { caption, width: full.width, height: full.height });
       rememberOwnPhoto(id, 'thumb', thumb.bytes);
       done++;

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import type { Api } from '../lib/api';
+import { LockIcon } from '../design/Icons';
 import { b64 } from '../lib/bytes';
 
 // Entschlüsselte Bilder nur im Arbeitsspeicher, nie auf der Platte.
@@ -73,7 +74,7 @@ export function PhotoImage({
       {uri ? (
         <Image source={{ uri }} style={StyleSheet.absoluteFill} resizeMode={contain ? 'contain' : 'cover'} />
       ) : failed ? (
-        <Text style={{ fontSize: 20 }}>🔒</Text>
+        <LockIcon size={22} color="rgba(238,240,255,0.5)" />
       ) : (
         <ActivityIndicator color="#fff" />
       )}

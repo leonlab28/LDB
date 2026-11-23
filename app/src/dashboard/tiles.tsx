@@ -4,6 +4,7 @@ import { Alert, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'r
 import MapView, { Marker } from 'react-native-maps';
 import { PhotoImage } from '../components/PhotoThumb';
 import { ICC_PAD, Label, Sub, Tile } from '../design/Glass';
+import { CameraIcon, MicIcon, NoteIcon, PlayIcon, PlusIcon, StopIcon } from '../design/Icons';
 import { useIcc } from '../design/skin';
 import { Stamped } from '../skins/icc/Stamped';
 import { Led } from '../design/Led';
@@ -72,7 +73,7 @@ export function PhotosTile({ c, style }: TileProps) {
         <LinearGradient colors={['transparent', 'rgba(8,10,28,0.85)']} style={styles.photoShade} />
       ) : (
         <View style={styles.photoEmpty}>
-          <Text style={styles.photoPlus}>{isMe ? '＋' : '📷'}</Text>
+          {isMe ? <PlusIcon size={26} color={C.fg2} /> : <CameraIcon size={28} color={C.fg3} />}
           <Sub style={{ textAlign: 'center' }}>{isMe ? 'Fotos teilen' : 'Heute noch keine Fotos'}</Sub>
         </View>
       )}
@@ -250,7 +251,7 @@ function PartnerVoiceTile({ c, style }: TileProps) {
       </View>
       <Led text={v ? mmss(meta?.duration_ms ?? 0) : '--:--'} size={16} />
       <View style={[styles.roundBtn, { backgroundColor: C.amber }, !v && { opacity: 0.3 }]}>
-        <Text style={styles.playIcon}>{playing ? '■' : '▶'}</Text>
+        {playing ? <StopIcon size={16} color="#1a1406" /> : <PlayIcon size={18} color="#1a1406" />}
       </View>
       <Text style={styles.voiceFoot} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
         {v ? agoLabel(v.recordedAt, c.now) : 'noch keine'}
@@ -284,7 +285,7 @@ function MyVoiceTile({ c, style }: TileProps) {
       </View>
       <Led text={recording ? mmss(elapsed) : mine ? mmss(meta?.duration_ms ?? 0) : '--:--'} size={16} color={recording ? C.lampRed : C.led} />
       <View style={[styles.roundBtn, { backgroundColor: C.alert }, recording && { transform: [{ scale: 1.12 }] }]}>
-        <Text style={{ fontSize: 17 }}>{rec.state === 'sending' ? '…' : '🎙'}</Text>
+        {rec.state === 'sending' ? <Text style={{ color: '#fff', fontSize: 17 }}>…</Text> : <MicIcon size={20} color="#fff" />}
       </View>
       <Text style={styles.voiceFoot} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
         {recording ? 'loslassen: senden' : 'halten: aufnehmen'}
@@ -356,7 +357,7 @@ export function NotesTile({ c, style }: TileProps) {
         </View>
       ) : (
         <View style={styles.center}>
-          <Text style={styles.photoPlus}>{c.mode === 'me' ? '＋' : '–'}</Text>
+          {c.mode === 'me' ? <PlusIcon size={24} color={C.fg2} /> : <NoteIcon size={24} color={C.fg3} />}
           <Sub>{c.mode === 'me' ? 'Post-it schreiben' : 'Keine Post-its'}</Sub>
         </View>
       )}

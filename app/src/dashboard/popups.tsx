@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, FlatList, PanResponder, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { PhotoImage } from '../components/PhotoThumb';
 import { Chip, Label, PillButton, Popup, Sub } from '../design/Glass';
+import { CloseIcon } from '../design/Icons';
 import { Led } from '../design/Led';
 import { C, F, LAMP, LAMP_LABEL, NOTE_ACCENT } from '../design/tokens';
 import { distanceKm } from '../lib/geo';
@@ -314,7 +315,7 @@ function NotesPopup({ c, visible, onClose }: P) {
                 </Text>
                 {isMe && !c.mirror ? (
                   <Pressable onPress={() => c.api.deleteNote(n.id).then(c.refresh, (e) => c.toast(String(e)))} hitSlop={10}>
-                    <Text style={styles.postitFoot}>✕</Text>
+                    <CloseIcon size={12} color={C.fg3} />
                   </Pressable>
                 ) : null}
               </View>
