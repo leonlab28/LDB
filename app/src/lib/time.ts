@@ -63,3 +63,35 @@ export function agoLabel(at: number, now = Date.now()): string {
   if (min < 48 * 60) return `vor ${Math.round(min / 60)} Std.`;
   return `vor ${Math.round(min / 1440)} Tagen`;
 }
+
+// Deutsche Namen für Städte, deren IANA-Name englisch ist (Rest: Unterstriche zu Leerzeichen).
+const CITY_DE: Record<string, string> = {
+  Hong_Kong: 'Hongkong',
+  Vienna: 'Wien',
+  Zurich: 'Zürich',
+  Rome: 'Rom',
+  Prague: 'Prag',
+  Warsaw: 'Warschau',
+  Lisbon: 'Lissabon',
+  Copenhagen: 'Kopenhagen',
+  Brussels: 'Brüssel',
+  Moscow: 'Moskau',
+  Athens: 'Athen',
+  Bucharest: 'Bukarest',
+  Belgrade: 'Belgrad',
+  Kiev: 'Kiew',
+  Kyiv: 'Kiew',
+  Singapore: 'Singapur',
+  Tokyo: 'Tokio',
+  Shanghai: 'Schanghai',
+  Macau: 'Macau',
+  Taipei: 'Taipeh',
+  Bangkok: 'Bangkok',
+  Mexico_City: 'Mexiko-Stadt',
+};
+
+/** Stadt aus einer IANA-Zeitzone, z. B. "Asia/Hong_Kong" → "Hongkong". */
+export function cityOf(tz: string): string {
+  const last = tz.split('/').pop() ?? tz;
+  return CITY_DE[last] ?? last.replace(/_/g, ' ');
+}

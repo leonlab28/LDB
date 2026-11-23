@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { PhotoImage } from '../components/PhotoThumb';
-import { Label, Sub, Tile } from '../design/Glass';
+import { ICC_PAD, Label, Sub, Tile } from '../design/Glass';
 import { useIcc } from '../design/skin';
 import { Stamped } from '../skins/icc/Stamped';
 import { Led } from '../design/Led';
@@ -58,6 +58,7 @@ export function PhotosTile({ c, style }: TileProps) {
   }
 
   const isMe = c.mode === 'me';
+  const icc = useIcc();
   return (
     <Tile
       style={style}
@@ -75,7 +76,7 @@ export function PhotosTile({ c, style }: TileProps) {
           <Sub style={{ textAlign: 'center' }}>{isMe ? 'Fotos teilen' : 'Heute noch keine Fotos'}</Sub>
         </View>
       )}
-      <View style={styles.photoFoot}>
+      <View style={[styles.photoFoot, icc && { left: ICC_PAD, right: ICC_PAD, bottom: ICC_PAD }]}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <Text style={styles.photoCount}>
             {progress ? `Lädt ${progress.done}/${progress.total}` : photos.length ? `${photos.length} ${photos.length === 1 ? 'Foto' : 'Fotos'}` : ''}
@@ -154,6 +155,7 @@ export function LightTile({ c, style }: TileProps) {
   const tz = opened(c.view?.profile)?.tz;
   const isMe = c.mode === 'me';
   const [busy, setBusy] = useState(false);
+  const icc = useIcc();
 
   async function cycle() {
     if (busy) return;
@@ -169,6 +171,23 @@ export function LightTile({ c, style }: TileProps) {
       setBusy(false);
     }
   }
+
+  const sub = cur?.until ? `bis ${formatClock(cur.until, tz)}` : isMe && !cur ? 'tippen' : '';
+  const label = (cur ? LAMP_LABEL[cur.state] : 'kein Status') + (cur?.state === 'busy' && raw?.emoji ? ` ${raw.emoji}` : '');
+
+  if (icc)
+    // ICC: Ringe mittig, darunter Status und Hinweis, alles als eine zentrierte Gruppe
+    return (
+      <Tile style={style} contentStyle={styles.iccLight} onPress={isMe ? cycle : () => c.open('light')} onLongPress={isMe ? () => c.open('light') : undefined} label="Ampel">
+        <Lamps state={cur?.state ?? null} size={13} />
+        <View style={{ alignItems: 'center', gap: 3, alignSelf: 'stretch' }}>
+          <Text style={[styles.lightLabel, !cur && { color: C.fg3, fontSize: 13 }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+            {label}
+          </Text>
+          {sub ? <Text style={styles.lightSub} numberOfLines={1}>{sub}</Text> : null}
+        </View>
+      </Tile>
+    );
 
   return (
     <Tile style={style} onPress={isMe ? cycle : () => c.open('light')} onLongPress={isMe ? () => c.open('light') : undefined} label="Ampel">
@@ -224,7 +243,7 @@ function PartnerVoiceTile({ c, style }: TileProps) {
   }
 
   return (
-    <Tile style={[style, styles.voice]} onPress={toggle} label="Sprachnachricht">
+    <Tile style={style} contentStyle={styles.voice} onPress={toggle} label="Sprachnachricht">
       <View style={styles.voiceTop}>
         <Label>Sprache</Label>
         {v && !v.listenedAt ? <Dot color={C.alert} /> : null}
@@ -258,7 +277,7 @@ function MyVoiceTile({ c, style }: TileProps) {
   const meta = opened(mine?.meta);
 
   return (
-    <Tile style={[style, styles.voice, recording && { borderColor: C.alert, backgroundColor: 'rgba(255,59,48,0.12)' }]} onPressIn={rec.start} onPressOut={rec.stop} label="Gedrückt halten zum Aufnehmen">
+    <Tile style={[style, recording && { borderColor: C.alert, backgroundColor: 'rgba(255,59,48,0.12)' }]} contentStyle={styles.voice} onPressIn={rec.start} onPressOut={rec.stop} label="Gedrückt halten zum Aufnehmen">
       <View style={styles.voiceTop}>
         <Label>Sprache</Label>
         {mine?.listenedAt ? <Text style={{ color: C.fg3, fontSize: 11 }}>✓ gehört</Text> : null}
@@ -296,11 +315,11 @@ export function NotesTile({ c, style }: TileProps) {
       <Tile style={style} face="plate" onPress={() => c.open('notes')} label="Notiz">
         <View style={{ flex: 1, justifyContent: 'space-between' }}>
           {text ? (
-            <Stamped text={text} size={13} maxChars={90} />
+            <Stamped text={text} size={15} maxChars={110} />
           ) : (
-            <Stamped text={c.mode === 'me' ? 'Notiz schreiben …' : 'Keine Notiz'} size={13} />
+            <Stamped text={c.mode === 'me' ? 'Notiz schreiben …' : 'Keine Notiz'} size={15} />
           )}
-          {top ? <Stamped text={`${formatClock(top.createdAt, tz)} · ${remainingLabel(top.expiresAt, c.now).toUpperCase()}`} size={8} seed={7} /> : null}
+          {top ? <Stamped text={`${formatClock(top.createdAt, tz)} · ${remainingLabel(top.expiresAt, c.now).toUpperCase()}`} size={9} seed={7} /> : null}
         </View>
         {unseen ? <View style={styles.iccNew} /> : null}
       </Tile>
@@ -399,6 +418,7 @@ export function MapTile({ c, style }: TileProps) {
   }
 
   const km = pos && myPos && !isMe && !c.mirror ? Math.round(distanceKm(pos, myPos)) : null;
+  const icc = useIcc();
 
   return (
     <Tile
@@ -411,7 +431,7 @@ export function MapTile({ c, style }: TileProps) {
       {pos ? <MiniMap lat={pos.lat} lon={pos.lon} /> : <View style={[StyleSheet.absoluteFill, { backgroundColor: C.mapWater, opacity: 0.35 }]} />}
       {/* Text nur oben: unten links und rechts sitzen Apple-Logo und „Rechtliches“ der Karte. */}
       <LinearGradient colors={['rgba(8,10,28,0.85)', 'rgba(8,10,28,0.25)', 'transparent']} locations={[0, 0.5, 1]} style={styles.mapShade} pointerEvents="none" />
-      <View style={styles.mapInner} pointerEvents="none">
+      <View style={[styles.mapInner, icc && { padding: ICC_PAD }]} pointerEvents="none">
         <View style={{ flexShrink: 1 }}>
           <Label>{loc?.paused ? 'Pausiert' : isMe ? 'Mein Standort' : 'Standort'}</Label>
           <Text style={styles.mapSub} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
@@ -441,7 +461,7 @@ export function MapTile({ c, style }: TileProps) {
 
 export function CalendarTile({ c, style }: TileProps) {
   return (
-    <Tile style={[style, styles.calendar]} onPress={() => c.open('calendar')} label="Kalender">
+    <Tile style={style} contentStyle={styles.calendar} onPress={() => c.open('calendar')} label="Kalender">
       <View style={{ flex: 1, gap: 4 }}>
         <Label>Als Nächstes</Label>
         <Text style={styles.calText} numberOfLines={1}>
@@ -488,5 +508,6 @@ const styles = StyleSheet.create({
   badge: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(5,6,15,0.75)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
   badgeUnit: { fontFamily: F.display, fontSize: 9.5, color: C.fg2 },
   calendar: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  iccLight: { alignItems: 'center', justifyContent: 'center', gap: 10 },
   calText: { color: C.fg2, fontSize: 13 },
 });

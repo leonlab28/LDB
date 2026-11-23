@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Led, ledWidth } from '../design/Led';
 import { C, F } from '../design/tokens';
 import { useIcc } from '../design/skin';
-import { differenceLabel, hourIn } from '../lib/time';
+import { differenceLabel, hourIn, cityOf } from '../lib/time';
 import { IccClockBanner } from '../skins/icc/IccClockBanner';
 
 const DAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
@@ -23,11 +23,6 @@ function parts(at: number, tz: string) {
   return { hh: get('hour'), mm: get('minute'), day: get('day'), month: get('month'), weekday: wd };
 }
 
-/** "Asia/Hong_Kong" -> "Hong Kong" */
-export function cityOf(tz: string): string {
-  const last = tz.split('/').pop() ?? tz;
-  return last.replace(/_/g, ' ');
-}
 
 /** In Expo Go schwebt oben rechts der Entwickler-Knopf. Dort nichts Wichtiges hinlegen. */
 const DEV_RIGHT_GAP = __DEV__ ? 54 : 0;

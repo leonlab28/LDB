@@ -19,10 +19,14 @@ import { useIcc } from './skin';
 import { C, F, R } from './tokens';
 
 /** ICC-Skin: gebürstetes Alu (Rahmen der Kacheln, wie die Verkleidung im ICC). */
-export const ALU = ['#e6e9ee', '#9aa1ab', '#c9ced6', '#6f7680', '#b9bec6', '#e9ecf0'] as const;
+export const ALU = ['#aeb3bb', '#6b717a', '#8f959e', '#50565f', '#7f858e', '#b3b8bf'] as const;
 const ALU_AT = [0, 0.18, 0.42, 0.58, 0.8, 1] as const;
 /** ICC-Skin: glatte Alu-Platte (Notiz). */
 export const PLATE = ['#dde1e6', '#c4c9d0', '#b3b9c1', '#a3a9b1'] as const;
+/** ICC-Skin: einheitlicher Innenabstand aller Kacheln (ab Innenkante des Alu-Rahmens). */
+export const ICC_PAD = 14;
+/** ICC-Skin: Stärke des Alu-Rahmens der Kacheln. */
+const ICC_RIM = 1.5;
 export const ICC = { red: '#ff2d14', cyan: '#22c4ff', inner: '#0b0d13', ceiling: '#0d1016' } as const;
 
 /** ICC-Decke: dunkle Lamellen, oben roter Schein der Neon-Uhr, unten ein Hauch Blau. */
@@ -79,9 +83,12 @@ export function Tile({
   padded = true,
   label,
   face = 'dark',
+  contentStyle,
 }: {
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
+  /** Anordnung des Inhalts (flexDirection, justifyContent …). Im ICC-Skin liegt der Inhalt in einer inneren Fläche. */
+  contentStyle?: StyleProp<ViewStyle>;
   onPress?: () => void;
   onLongPress?: () => void;
   onPressIn?: () => void;
@@ -106,11 +113,11 @@ export function Tile({
       >
         <LinearGradient colors={ALU} locations={ALU_AT} style={StyleSheet.absoluteFill} />
         {face === 'plate' ? (
-          <LinearGradient colors={PLATE} locations={[0, 0.45, 0.75, 1]} style={[styles.iccInner, padded && styles.iccPadded]}>
+          <LinearGradient colors={PLATE} locations={[0, 0.45, 0.75, 1]} style={[styles.iccInner, padded && styles.iccPadded, contentStyle]}>
             {children}
           </LinearGradient>
         ) : (
-          <View style={[styles.iccInner, { backgroundColor: ICC.inner }, padded && styles.iccPadded]}>{children}</View>
+          <View style={[styles.iccInner, { backgroundColor: ICC.inner }, padded && styles.iccPadded, contentStyle]}>{children}</View>
         )}
       </Pressable>
     );
@@ -123,7 +130,7 @@ export function Tile({
       delayLongPress={350}
       accessibilityRole="button"
       accessibilityLabel={label}
-      style={({ pressed }) => [styles.tile, padded && styles.padded, pressed && (onPress || onLongPress) ? styles.pressed : null, style]}
+      style={({ pressed }) => [styles.tile, padded && styles.padded, contentStyle, pressed && (onPress || onLongPress) ? styles.pressed : null, style]}
     >
       {children}
     </Pressable>
@@ -280,8 +287,8 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 8 },
   },
-  iccInner: { position: 'absolute', left: 2.5, top: 2.5, right: 2.5, bottom: 2.5, borderRadius: 23.5, overflow: 'hidden' },
-  iccPadded: { padding: 13 },
+  iccInner: { position: 'absolute', left: ICC_RIM, top: ICC_RIM, right: ICC_RIM, bottom: ICC_RIM, borderRadius: 26 - ICC_RIM, overflow: 'hidden' },
+  iccPadded: { padding: ICC_PAD },
   iccPopup: { borderRadius: 40, overflow: 'hidden', padding: 3, shadowColor: '#000', shadowOpacity: 0.8, shadowRadius: 30, shadowOffset: { width: 0, height: 20 } },
   iccPopInner: { borderRadius: 37, backgroundColor: '#0b0d12', overflow: 'hidden', flexShrink: 1, paddingTop: 10 },
   iccNeonBar: {

@@ -2,6 +2,9 @@ import { useState, type ReactNode } from 'react';
 import { View, type LayoutChangeEvent } from 'react-native';
 import { GAP } from '../design/tokens';
 import { ClockBanner } from './ClockBanner';
+import { cityOf } from '../lib/time';
+import { useIcc } from '../design/skin';
+import { HEAD_H } from '../skins/icc/IccClockBanner';
 import type { DashCtx } from './context';
 import { CalendarTile, LightTile, MapTile, NotesTile, PhotosTile, VoiceTile } from './tiles';
 
@@ -13,10 +16,10 @@ type Box = { left: number; top: number; width: number; height: number };
  * dann Post-its und Karte, unten der Kalender.
  * Querformat: Uhr links oben, darunter Sprache, Ampel und Kalender; rechts Fotos groß, darunter Post-its und Karte.
  */
-function layout(W: number, H: number) {
+function layout(W: number, H: number, extraTop = 0) {
   const g = GAP;
   if (W <= H * 1.1) {
-    const clockH = Math.max(130, Math.min(H * 0.23, 240));
+    const clockH = Math.max(130, Math.min(H * 0.23, 240)) + extraTop;
     const rest = H - clockH - 3 * g;
     const rowC = Math.max(58, Math.min(rest * 0.13, 84)); // Kalender: schmale Leiste
     const rowA = (rest - rowC) * 0.53;
@@ -67,13 +70,14 @@ export function Dashboard({ c, corner }: { c: DashCtx; corner: ReactNode }) {
   };
 
   const profile = c.view?.profile && c.view.profile !== 'locked' ? c.view.profile : null;
-  const name = profile?.name || (c.mode === 'me' ? 'Ich' : 'Drüben');
+  const icc = useIcc();
+  const name = profile?.name || (c.mode === 'me' ? 'Ich' : profile?.tz ? cityOf(profile.tz) : 'Partner');
 
   return (
     <View style={{ flex: 1 }} onLayout={onLayout}>
       {size
         ? (() => {
-            const b = layout(size.w, size.h);
+            const b = layout(size.w, size.h, icc ? HEAD_H : 0);
             const at = (x: Box) => ({ position: 'absolute' as const, ...x });
             return (
               <>

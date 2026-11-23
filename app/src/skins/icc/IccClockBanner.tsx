@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { F } from '../../design/tokens';
-import { differenceLabel, hourIn } from '../../lib/time';
+import { cityOf, differenceLabel, hourIn } from '../../lib/time';
 import { NeonCoil, NeonText, neonTextWidth } from './Neon';
 
 const DAYS = ['MONTAG', 'DIENSTAG', 'MITTWOCH', 'DONNERSTAG', 'FREITAG', 'SAMSTAG', 'SONNTAG'];
@@ -22,7 +22,6 @@ function parts(at: number, tz: string) {
   return { hh: get('hour'), mm: get('minute'), day: get('day'), month: Number(get('month')) - 1, weekday: wd };
 }
 
-const cityOf = (tz: string) => (tz.split('/').pop() ?? tz).replace(/_/g, ' ');
 const DEV_RIGHT_GAP = __DEV__ ? 54 : 0;
 
 /**
@@ -55,25 +54,33 @@ export function IccClockBanner({
   const win = useWindowDimensions();
   const landscape = win.width > win.height * 1.1;
 
-  const metaH = 42;
-  const coilH = 26;
-  const top = corner || DEV_RIGHT_GAP ? 6 : 0;
-  const clockH = Math.max(40, Math.min(height - metaH - coilH - top - 14, ((width - 24) * 100) / neonTextWidth('88:88', 100)));
+  // Von oben nach unten: Kopfzeile (Umschalter), Neon-Uhr, Ort/Tag/Temperatur, Spirale.
+  const headH = corner ? HEAD_H : 0;
+  const metaH = 40;
+  const coilH = 22;
+  const gapTop = 8; // Kopfzeile → Uhr
+  const gapMeta = 12; // Uhr → Ort
+  const gapCoil = 8; // Ort → Spirale
+  // Hochformat: Uhr mittig, aber nicht unter den Expo-Knopf rechts (nur in der Entwicklung)
+  const maxW = landscape ? width - 24 : width - 24 - 2 * DEV_RIGHT_GAP;
+  const room = height - headH - gapTop - gapMeta - metaH - gapCoil - coilH;
+  const clockH = Math.max(40, Math.min(room, (maxW * 100) / neonTextWidth('88:88', 100)));
+  const slack = Math.max(0, room - clockH) / 2; // wenn die Breite begrenzt: Uhr mittig im freien Raum
   const clockW = neonTextWidth('88:88', clockH);
-  const tempH = 24;
+  const tempH = 34;
 
   return (
     <View style={{ width, height }}>
-      {corner ? <View style={[styles.corner, { right: DEV_RIGHT_GAP }]}>{corner}</View> : null}
-      <View style={{ marginTop: top + clockH * 0.14, alignItems: landscape ? 'flex-start' : 'center', paddingLeft: landscape ? 12 : 0, opacity: night ? 0.75 : 1 }}>
+      {corner ? <View style={[styles.head, { height: headH, paddingRight: DEV_RIGHT_GAP }]}>{corner}</View> : null}
+      <View style={{ marginTop: gapTop + slack, height: clockH, alignItems: landscape ? 'flex-start' : 'center', paddingLeft: landscape ? 18 : 0, opacity: night ? 0.75 : 1 }}>
         <View style={{ width: clockW, height: clockH }}>
           <NeonText text={`${p.hh}:${p.mm}`} height={clockH} color="red" />
         </View>
       </View>
-      <View style={[styles.meta, { bottom: coilH, height: metaH }]}>
+      <View style={[styles.meta, { marginTop: gapMeta + slack, height: metaH }]}>
         <View style={{ flexShrink: 1 }}>
-          <Text style={styles.city} numberOfLines={1}>
-            {(tz ? cityOf(tz) : name).toUpperCase()}
+          <Text style={styles.city} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+            {(tz ? cityOf(tz) : 'Zeitzone noch nicht geteilt').toUpperCase()}
           </Text>
           <Text style={styles.day} numberOfLines={1}>
             {DAYS[p.weekday] ?? ''} · {p.day}. {MONTHS[p.month] ?? ''}
@@ -81,20 +88,23 @@ export function IccClockBanner({
           </Text>
         </View>
         {/* Wetter: Platzhalter, bis die Wetterdaten angebunden sind. */}
-        <View style={{ width: neonTextWidth('--°', tempH), height: tempH, marginRight: 6 }}>
+        <View style={{ width: neonTextWidth('--°', tempH), height: tempH }}>
           <NeonText text="--°" height={tempH} color="cyan" />
         </View>
       </View>
       <View style={[styles.coil, { height: coilH }]}>
-        <NeonCoil width={landscape ? width : width - 40} height={coilH} />
+        <NeonCoil width={width - 36} height={coilH} />
       </View>
     </View>
   );
 }
 
+/** Höhe der Kopfzeile mit dem Umschalter. Das Dashboard gibt der ICC-Uhr diese Höhe zusätzlich. */
+export const HEAD_H = 36;
+
 const styles = StyleSheet.create({
-  corner: { position: 'absolute', top: 0, zIndex: 2 },
-  meta: { position: 'absolute', left: 18, right: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  head: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' },
+  meta: { marginHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   city: { fontFamily: F.display, fontSize: 13, letterSpacing: 2.6, color: '#e9ecf2' },
   day: { fontFamily: F.display, fontSize: 10, letterSpacing: 2, color: '#8a93a3', marginTop: 5 },
   coil: { position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
