@@ -68,7 +68,8 @@ export function PhotosTile({ c, style }: TileProps) {
       onLongPress={isMe ? () => c.open('photos') : undefined}
       label={isMe ? 'Fotos teilen' : 'Fotos ansehen'}
     >
-      {newest ? <PhotoImage load={c.loadPhoto} id={newest.id} size={newest.hasThumb ? 'thumb' : 'full'} style={StyleSheet.absoluteFill} /> : null}
+      {/* Die Foto-Kachel ist groß: Vollbild laden, damit sie auf Retina scharf ist (auch bei älteren Fotos mit kleiner Vorschau). */}
+      {newest ? <PhotoImage load={c.loadPhoto} id={newest.id} size="full" style={StyleSheet.absoluteFill} /> : null}
       {newest ? (
         <LinearGradient colors={['transparent', 'rgba(8,10,28,0.85)']} style={styles.photoShade} />
       ) : (
