@@ -4,15 +4,15 @@
     "slug": "ldb",
     "scheme": "ldb",
     "version": "0.1.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "dark",
     "platforms": [
       "ios"
     ],
     "ios": {
       "bundleIdentifier": "com.leonlab28.ldb",
-      "supportsTablet": false
+      "supportsTablet": true
     },
     "plugins": [
       "expo-secure-store",
@@ -29,6 +29,13 @@
           "photosPermission": "LDB braucht Zugriff auf deine Fotos, damit du Bilder verschlüsselt in den 24-h-Foto-Dump teilen kannst.",
           "cameraPermission": false,
           "microphonePermission": false
+        }
+      ],
+      "expo-font",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "LDB nimmt nur auf, solange du die Sprach-Kachel gedrückt hältst. Die Nachricht wird verschlüsselt verschickt."
         }
       ]
     ]

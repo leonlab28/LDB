@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import type { Api } from '../lib/api';
 import { b64 } from '../lib/bytes';
 
@@ -39,13 +39,19 @@ export function rememberedOwnPhoto(id: string, size: 'full' | 'thumb'): string |
   return cache.get(`own:${id}:${size}`) ?? cache.get(`own:${id}:full`) ?? null;
 }
 
-export function PhotoThumb({ load, id, hasThumb, seen, kept, onPress }: {
+/** Entschlüsseltes Foto, füllt den Container. Zeigt ein Schloss, wenn es sich nicht öffnen lässt. */
+export function PhotoImage({
+  load,
+  id,
+  size,
+  style,
+  contain = false,
+}: {
   load: PhotoLoader;
   id: string;
-  hasThumb: boolean;
-  seen: boolean;
-  kept: boolean;
-  onPress: () => void;
+  size: 'full' | 'thumb';
+  style?: StyleProp<ViewStyle>;
+  contain?: boolean;
 }) {
   const [uri, setUri] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
@@ -54,26 +60,27 @@ export function PhotoThumb({ load, id, hasThumb, seen, kept, onPress }: {
     let alive = true;
     setUri(null);
     setFailed(false);
-    load(id, hasThumb ? 'thumb' : 'full')
+    load(id, size)
       .then((u) => alive && setUri(u))
       .catch(() => alive && setFailed(true));
     return () => {
       alive = false;
     };
-  }, [load, id, hasThumb]);
+  }, [load, id, size]);
 
   return (
-    <Pressable onPress={onPress} style={styles.box}>
-      {uri ? <Image source={{ uri }} style={styles.img} /> : failed ? <Text>🔒</Text> : <ActivityIndicator />}
-      {!seen ? <View style={styles.dot} /> : null}
-      {kept ? <Text style={styles.heart}>❤️</Text> : null}
-    </Pressable>
+    <View style={[styles.box, style]}>
+      {uri ? (
+        <Image source={{ uri }} style={StyleSheet.absoluteFill} resizeMode={contain ? 'contain' : 'cover'} />
+      ) : failed ? (
+        <Text style={{ fontSize: 20 }}>🔒</Text>
+      ) : (
+        <ActivityIndicator color="#fff" />
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  box: { width: 96, height: 96, borderRadius: 12, overflow: 'hidden', backgroundColor: '#8882', alignItems: 'center', justifyContent: 'center' },
-  img: { width: '100%', height: '100%' },
-  dot: { position: 'absolute', top: 6, right: 6, width: 10, height: 10, borderRadius: 5, backgroundColor: '#D9480F' },
-  heart: { position: 'absolute', bottom: 4, right: 6, fontSize: 14 },
+  box: { overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
 });
