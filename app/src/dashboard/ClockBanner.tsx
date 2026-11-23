@@ -54,9 +54,11 @@ function StandardClockBanner({ name, tz, myTz, now, width, height, showDifferenc
 
   const nameSize = Math.max(18, Math.min(28, height * 0.13));
   const headH = nameSize + 26;
-  const dayW = Math.max(34, Math.min(52, width * 0.11));
+  // Michroma ist breit: Spalte aus der Schriftgröße berechnen, damit „MON“ und „23.11.“ nie umbrechen.
+  const daySize = Math.max(10, Math.min(15, (height - headH) * 0.15));
+  const dateSize = daySize * 0.78;
+  const dayW = Math.ceil(Math.max(daySize * 3.6, dateSize * 5.2)) + 4;
   const ledSize = Math.max(28, Math.min((height - headH - 6) * 0.9, (width - dayW - 12) / (ledWidth('88:88', 1) * 1.02)));
-  const daySize = Math.max(10, Math.min(15, ledSize * 0.17));
 
   return (
     <View style={{ width, height }}>
@@ -77,8 +79,10 @@ function StandardClockBanner({ name, tz, myTz, now, width, height, showDifferenc
       </View>
       <View style={styles.body}>
         <View style={{ width: dayW, gap: 4 }}>
-          <Text style={[styles.day, { fontSize: daySize }]}>{DAYS[p.weekday] ?? ''}</Text>
-          <Text style={[styles.date, { fontSize: daySize * 0.8 }]}>
+          <Text style={[styles.day, { fontSize: daySize }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+            {DAYS[p.weekday] ?? ''}
+          </Text>
+          <Text style={[styles.date, { fontSize: dateSize }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
             {p.day}.{p.month}.
           </Text>
         </View>
