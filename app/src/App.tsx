@@ -12,6 +12,7 @@ import type { DashCtx, Mode, PopupKind } from './dashboard/context';
 import { Dashboard } from './dashboard/Dashboard';
 import { Popups, SettingsPopup } from './dashboard/popups';
 import { Backdrop } from './design/Glass';
+import { GearIcon } from './design/Icons';
 import { SkinProvider } from './design/skin';
 import { C, F } from './design/tokens';
 import { Api, ApiError } from './lib/api';
@@ -163,7 +164,7 @@ function Main({ session, onLogout }: { session: Session; onLogout: () => void })
     <View style={styles.corner}>
       {mode === 'me' ? (
         <Pressable onPress={() => setPopup('settings')} hitSlop={8} style={styles.gear} accessibilityLabel="Einstellungen">
-          <Text style={{ color: C.fg, fontSize: 18, marginTop: -1 }}>⚙︎</Text>
+          <GearIcon size={18} color={C.fg} />
         </Pressable>
       ) : null}
       <View style={styles.switch}>

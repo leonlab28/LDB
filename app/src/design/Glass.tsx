@@ -1,8 +1,11 @@
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
-import type { ReactNode } from 'react';
+import { useEffect, useRef, useState, type ComponentRef, type ReactNode } from 'react';
 import {
+  Animated,
+  Easing,
   KeyboardAvoidingView,
+  type LayoutChangeEvent,
   Modal,
   Pressable,
   ScrollView,
@@ -15,6 +18,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import Svg, { Defs, Pattern, RadialGradient, Rect, Stop } from 'react-native-svg';
+import { CloseIcon } from './Icons';
 import { useIcc } from './skin';
 import { C, F, R } from './tokens';
 
@@ -99,11 +103,15 @@ export function Tile({
   face?: 'dark' | 'plate';
 }) {
   const icc = useIcc();
+  const ref = useRef<ComponentRef<typeof View>>(null);
+  const press = withOrigin(ref, onPress);
+  const longPress = withOrigin(ref, onLongPress);
   if (icc)
     return (
       <Pressable
-        onPress={onPress}
-        onLongPress={onLongPress}
+        ref={ref}
+        onPress={press}
+        onLongPress={longPress}
         onPressIn={onPressIn}
         onPressOut={onPressOut}
         delayLongPress={350}
@@ -123,8 +131,9 @@ export function Tile({
     );
   return (
     <Pressable
-      onPress={onPress}
-      onLongPress={onLongPress}
+      ref={ref}
+      onPress={press}
+      onLongPress={longPress}
       onPressIn={onPressIn}
       onPressOut={onPressOut}
       delayLongPress={350}
@@ -135,6 +144,90 @@ export function Tile({
       {children}
     </Pressable>
   );
+}
+
+// ---------------------------------------------------------------------------------------------
+// Öffnen wie bei Apple: Das Pop-up wächst aus der angetippten Kachel heraus und schrumpft beim
+// Schließen dorthin zurück. Die Kachel merkt sich beim Tippen ihre Position auf dem Bildschirm.
+// ---------------------------------------------------------------------------------------------
+
+type Rect4 = { x: number; y: number; w: number; h: number };
+let lastOrigin: { rect: Rect4; at: number } | null = null;
+
+/** Merkt sich die Position einer Kachel, bevor ihre Aktion ein Pop-up öffnet. */
+type Measurable = { measureInWindow: (cb: (x: number, y: number, w: number, h: number) => void) => void };
+
+function withOrigin(ref: { current: Measurable | null }, fn?: () => void) {
+  if (!fn) return undefined;
+  return () => {
+    const node = ref.current;
+    if (!node) return fn();
+    node.measureInWindow((x, y, w, h) => {
+      if (w > 0 && h > 0) lastOrigin = { rect: { x, y, w, h }, at: Date.now() };
+      fn();
+    });
+  };
+}
+
+/** Nur frische Positionen verwenden (sonst z. B. das Zahnrad: Pop-up blendet einfach weich ein). */
+function takeOrigin(): Rect4 | null {
+  const o = lastOrigin;
+  lastOrigin = null;
+  return o && Date.now() - o.at < 800 ? o.rect : null;
+}
+
+function useMorph(visible: boolean) {
+  const [mounted, setMounted] = useState(visible);
+  const p = useRef(new Animated.Value(0)).current;
+  const origin = useRef<Rect4 | null>(null);
+  const [card, setCard] = useState<Rect4 | null>(null);
+  const started = useRef(false);
+
+  useEffect(() => {
+    if (visible) {
+      origin.current = takeOrigin();
+      started.current = false;
+      setCard(null);
+      p.setValue(0);
+      setMounted(true);
+    } else if (mounted) {
+      Animated.timing(p, { toValue: 0, duration: 230, easing: Easing.bezier(0.4, 0, 0.6, 1), useNativeDriver: true }).start(() => setMounted(false));
+    }
+  }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const onCardLayout = (e: LayoutChangeEvent) => {
+    const { x, y, width, height } = e.nativeEvent.layout;
+    setCard({ x, y, w: width, h: height });
+    // Nur beim ersten Layout starten (die Tastatur verschiebt das Pop-up später noch einmal).
+    if (!started.current) {
+      started.current = true;
+      Animated.spring(p, { toValue: 1, damping: 22, stiffness: 230, mass: 0.9, useNativeDriver: true }).start();
+    }
+  };
+
+  const o = origin.current;
+  let cardStyle: object;
+  if (o && card) {
+    const dx = o.x + o.w / 2 - (card.x + card.w / 2);
+    const dy = o.y + o.h / 2 - (card.y + card.h / 2);
+    cardStyle = {
+      opacity: p.interpolate({ inputRange: [0, 0.08, 1], outputRange: [0, 1, 1] }),
+      transform: [
+        { translateX: p.interpolate({ inputRange: [0, 1], outputRange: [dx, 0] }) },
+        { translateY: p.interpolate({ inputRange: [0, 1], outputRange: [dy, 0] }) },
+        { scaleX: p.interpolate({ inputRange: [0, 1], outputRange: [Math.max(0.05, o.w / card.w), 1] }) },
+        { scaleY: p.interpolate({ inputRange: [0, 1], outputRange: [Math.max(0.05, o.h / card.h), 1] }) },
+      ],
+    };
+  } else {
+    cardStyle = {
+      opacity: card ? p : 0,
+      transform: [{ scale: p.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }) }],
+    };
+  }
+  // Inhalt blendet erst auf, wenn die Form fast steht, damit er beim Wachsen nicht verzerrt wirkt.
+  const contentStyle = { opacity: o ? p.interpolate({ inputRange: [0, 0.55, 1], outputRange: [0, 0, 1] }) : 1 };
+  return { mounted, p, cardStyle, contentStyle, onCardLayout };
 }
 
 /** Pop-up über der App. Rundherum bleibt der Hintergrund sichtbar, es wirkt nie wie eine neue Seite. */
@@ -157,67 +250,65 @@ export function Popup({
 }) {
   const { width, height } = useWindowDimensions();
   const icc = useIcc();
+  const m = useMorph(visible);
   const w = Math.min(width * 0.9, wide ? 760 : 560);
   const maxH = height * (width > height ? 0.86 : 0.78);
-  if (icc)
-    return (
-      <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} supportedOrientations={['portrait', 'landscape']}>
-        <BlurView intensity={14} tint="dark" style={StyleSheet.absoluteFill} />
-        <Pressable style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(3,4,8,0.45)' }]} onPress={onClose} accessibilityLabel="Schließen" />
-        <KeyboardAvoidingView behavior="padding" style={styles.center} pointerEvents="box-none">
-          <View style={[styles.iccPopup, { width: w, maxHeight: maxH }]}>
+
+  const body = scroll ? (
+    <ScrollView contentContainerStyle={styles.popBody} keyboardShouldPersistTaps="handled">
+      {children}
+    </ScrollView>
+  ) : (
+    <View style={[styles.popBody, { flexShrink: 1 }]}>{children}</View>
+  );
+
+  return (
+    <Modal visible={m.mounted} transparent animationType="none" onRequestClose={onClose} supportedOrientations={['portrait', 'landscape']}>
+      <Animated.View style={[StyleSheet.absoluteFill, { opacity: m.p }]}>
+        <BlurView intensity={icc ? 14 : 18} tint="dark" style={StyleSheet.absoluteFill} />
+        <Pressable style={[StyleSheet.absoluteFill, { backgroundColor: icc ? 'rgba(3,4,8,0.45)' : 'rgba(3,4,12,0.55)' }]} onPress={onClose} accessibilityLabel="Schließen" />
+      </Animated.View>
+      <KeyboardAvoidingView behavior="padding" style={styles.center} pointerEvents="box-none">
+        {icc ? (
+          <Animated.View onLayout={m.onCardLayout} style={[styles.iccPopup, { width: w, maxHeight: maxH }, m.cardStyle]}>
             <LinearGradient colors={ALU} locations={ALU_AT} style={StyleSheet.absoluteFill} />
             <View style={styles.iccPopInner}>
               <View style={styles.iccNeonBar} />
+              <Animated.View style={[{ flexShrink: 1 }, m.contentStyle]}>
+                <View style={styles.popHead}>
+                  <Text style={styles.iccPopTitle} numberOfLines={1}>
+                    {title.toUpperCase()}
+                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    {right}
+                    <Pressable onPress={onClose} hitSlop={10} accessibilityLabel="Schließen" style={styles.iccClose}>
+                      <LinearGradient colors={ALU} locations={ALU_AT} style={StyleSheet.absoluteFill} />
+                      <CloseIcon size={12} color="#1a1c22" />
+                    </Pressable>
+                  </View>
+                </View>
+                {body}
+              </Animated.View>
+            </View>
+          </Animated.View>
+        ) : (
+          <Animated.View onLayout={m.onCardLayout} style={[styles.popup, { width: w, maxHeight: maxH }, m.cardStyle]}>
+            <Animated.View style={[{ flexShrink: 1 }, m.contentStyle]}>
               <View style={styles.popHead}>
-                <Text style={styles.iccPopTitle} numberOfLines={1}>
-                  {title.toUpperCase()}
+                <Text style={styles.popTitle} numberOfLines={1}>
+                  {title}
                 </Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   {right}
-                  <Pressable onPress={onClose} hitSlop={10} accessibilityLabel="Schließen" style={styles.iccClose}>
-                    <LinearGradient colors={ALU} locations={ALU_AT} style={StyleSheet.absoluteFill} />
-                    <Text style={{ color: '#1a1c22', fontSize: 14 }}>✕</Text>
+                  <Pressable onPress={onClose} style={styles.close} hitSlop={10} accessibilityLabel="Schließen">
+                    <CloseIcon size={12} color={C.fg2} />
                   </Pressable>
                 </View>
               </View>
-              {scroll ? (
-                <ScrollView contentContainerStyle={styles.popBody} keyboardShouldPersistTaps="handled">
-                  {children}
-                </ScrollView>
-              ) : (
-                <View style={[styles.popBody, { flexShrink: 1 }]}>{children}</View>
-              )}
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-    );
-  return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} supportedOrientations={['portrait', 'landscape']}>
-      <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
-      <Pressable style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(3,4,12,0.55)' }]} onPress={onClose} accessibilityLabel="Schließen" />
-      <KeyboardAvoidingView behavior="padding" style={styles.center} pointerEvents="box-none">
-        <View style={[styles.popup, { width: w, maxHeight: maxH }]}>
-          <View style={styles.popHead}>
-            <Text style={styles.popTitle} numberOfLines={1}>
-              {title}
-            </Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              {right}
-              <Pressable onPress={onClose} style={styles.close} hitSlop={10} accessibilityLabel="Schließen">
-                <Text style={{ color: C.fg2, fontSize: 14 }}>✕</Text>
-              </Pressable>
-            </View>
-          </View>
-          {scroll ? (
-            <ScrollView contentContainerStyle={styles.popBody} keyboardShouldPersistTaps="handled">
-              {children}
-            </ScrollView>
-          ) : (
-            <View style={[styles.popBody, { flexShrink: 1 }]}>{children}</View>
-          )}
-        </View>
+              {body}
+            </Animated.View>
+          </Animated.View>
+        )}
       </KeyboardAvoidingView>
     </Modal>
   );
