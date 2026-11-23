@@ -18,7 +18,6 @@ import {
   type ViewStyle,
 } from 'react-native';
 import Svg, { Defs, Pattern, RadialGradient, Rect, Stop } from 'react-native-svg';
-import { CloseIcon } from './Icons';
 import { useIcc } from './skin';
 import { C, F, R } from './tokens';
 
@@ -230,7 +229,10 @@ function useMorph(visible: boolean) {
   return { mounted, p, cardStyle, contentStyle, onCardLayout };
 }
 
-/** Pop-up über der App. Rundherum bleibt der Hintergrund sichtbar, es wirkt nie wie eine neue Seite. */
+/**
+ * Pop-up über der App. Rundherum bleibt der Hintergrund sichtbar, es wirkt nie wie eine neue Seite.
+ * Kein Schließen-Knopf: Tippen außerhalb schließt (Leon, 23.11.2026).
+ */
 export function Popup({
   visible,
   onClose,
@@ -281,10 +283,6 @@ export function Popup({
                   </Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     {right}
-                    <Pressable onPress={onClose} hitSlop={10} accessibilityLabel="Schließen" style={styles.iccClose}>
-                      <LinearGradient colors={ALU} locations={ALU_AT} style={StyleSheet.absoluteFill} />
-                      <CloseIcon size={12} color="#1a1c22" />
-                    </Pressable>
                   </View>
                 </View>
                 {body}
@@ -300,9 +298,6 @@ export function Popup({
                 </Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   {right}
-                  <Pressable onPress={onClose} style={styles.close} hitSlop={10} accessibilityLabel="Schließen">
-                    <CloseIcon size={12} color={C.fg2} />
-                  </Pressable>
                 </View>
               </View>
               {body}
