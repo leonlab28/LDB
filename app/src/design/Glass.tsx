@@ -14,10 +14,53 @@ import {
   type TextStyle,
   type ViewStyle,
 } from 'react-native';
+import Svg, { Defs, Pattern, RadialGradient, Rect, Stop } from 'react-native-svg';
+import { useIcc } from './skin';
 import { C, F, R } from './tokens';
+
+/** ICC-Skin: gebürstetes Alu (Rahmen der Kacheln, wie die Verkleidung im ICC). */
+export const ALU = ['#e6e9ee', '#9aa1ab', '#c9ced6', '#6f7680', '#b9bec6', '#e9ecf0'] as const;
+const ALU_AT = [0, 0.18, 0.42, 0.58, 0.8, 1] as const;
+/** ICC-Skin: glatte Alu-Platte (Notiz). */
+export const PLATE = ['#dde1e6', '#c4c9d0', '#b3b9c1', '#a3a9b1'] as const;
+export const ICC = { red: '#ff2d14', cyan: '#22c4ff', inner: '#0b0d13', ceiling: '#0d1016' } as const;
+
+/** ICC-Decke: dunkle Lamellen, oben roter Schein der Neon-Uhr, unten ein Hauch Blau. */
+function IccCeiling() {
+  return (
+    <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+      <Defs>
+        <Pattern id="slat" patternUnits="userSpaceOnUse" width={8} height={18}>
+          <Rect width={8} height={18} fill="#0d1016" />
+          <Rect y={15} width={8} height={1} fill="#181c25" />
+          <Rect y={16} width={8} height={2} fill="#050608" />
+        </Pattern>
+        <RadialGradient id="glowTop" cx="50%" cy="10%" rx="70%" ry="30%">
+          <Stop offset="0" stopColor="#ff280a" stopOpacity={0.16} />
+          <Stop offset="1" stopColor="#ff280a" stopOpacity={0} />
+        </RadialGradient>
+        <RadialGradient id="glowBottom" cx="50%" cy="100%" rx="60%" ry="30%">
+          <Stop offset="0" stopColor="#0078ff" stopOpacity={0.1} />
+          <Stop offset="1" stopColor="#0078ff" stopOpacity={0} />
+        </RadialGradient>
+      </Defs>
+      <Rect width="100%" height="100%" fill="url(#slat)" />
+      <Rect width="100%" height="100%" fill="url(#glowTop)" />
+      <Rect width="100%" height="100%" fill="url(#glowBottom)" />
+    </Svg>
+  );
+}
 
 /** Tiefes Indigo, wie Himmel nach Sonnenuntergang über dem Hafen. Liegt hinter der ganzen App. */
 export function Backdrop({ children }: { children: ReactNode }) {
+  const icc = useIcc();
+  if (icc)
+    return (
+      <View style={{ flex: 1, backgroundColor: ICC.ceiling }}>
+        <IccCeiling />
+        {children}
+      </View>
+    );
   return (
     <LinearGradient colors={[C.space1, C.space2, C.space3]} locations={[0, 0.55, 1]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ flex: 1 }}>
       {children}
@@ -35,6 +78,7 @@ export function Tile({
   onPressOut,
   padded = true,
   label,
+  face = 'dark',
 }: {
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
@@ -44,7 +88,32 @@ export function Tile({
   onPressOut?: () => void;
   padded?: boolean;
   label?: string;
+  /** Nur ICC: 'plate' macht die ganze Kachel zur glatten Alu-Platte (Notiz). */
+  face?: 'dark' | 'plate';
 }) {
+  const icc = useIcc();
+  if (icc)
+    return (
+      <Pressable
+        onPress={onPress}
+        onLongPress={onLongPress}
+        onPressIn={onPressIn}
+        onPressOut={onPressOut}
+        delayLongPress={350}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        style={({ pressed }) => [styles.iccTile, style, pressed && (onPress || onLongPress) ? { transform: [{ scale: 0.97 }] } : null]}
+      >
+        <LinearGradient colors={ALU} locations={ALU_AT} style={StyleSheet.absoluteFill} />
+        {face === 'plate' ? (
+          <LinearGradient colors={PLATE} locations={[0, 0.45, 0.75, 1]} style={[styles.iccInner, padded && styles.iccPadded]}>
+            {children}
+          </LinearGradient>
+        ) : (
+          <View style={[styles.iccInner, { backgroundColor: ICC.inner }, padded && styles.iccPadded]}>{children}</View>
+        )}
+      </Pressable>
+    );
   return (
     <Pressable
       onPress={onPress}
@@ -80,8 +149,43 @@ export function Popup({
   wide?: boolean;
 }) {
   const { width, height } = useWindowDimensions();
+  const icc = useIcc();
   const w = Math.min(width * 0.9, wide ? 760 : 560);
   const maxH = height * (width > height ? 0.86 : 0.78);
+  if (icc)
+    return (
+      <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} supportedOrientations={['portrait', 'landscape']}>
+        <BlurView intensity={14} tint="dark" style={StyleSheet.absoluteFill} />
+        <Pressable style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(3,4,8,0.45)' }]} onPress={onClose} accessibilityLabel="Schließen" />
+        <KeyboardAvoidingView behavior="padding" style={styles.center} pointerEvents="box-none">
+          <View style={[styles.iccPopup, { width: w, maxHeight: maxH }]}>
+            <LinearGradient colors={ALU} locations={ALU_AT} style={StyleSheet.absoluteFill} />
+            <View style={styles.iccPopInner}>
+              <View style={styles.iccNeonBar} />
+              <View style={styles.popHead}>
+                <Text style={styles.iccPopTitle} numberOfLines={1}>
+                  {title.toUpperCase()}
+                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  {right}
+                  <Pressable onPress={onClose} hitSlop={10} accessibilityLabel="Schließen" style={styles.iccClose}>
+                    <LinearGradient colors={ALU} locations={ALU_AT} style={StyleSheet.absoluteFill} />
+                    <Text style={{ color: '#1a1c22', fontSize: 14 }}>✕</Text>
+                  </Pressable>
+                </View>
+              </View>
+              {scroll ? (
+                <ScrollView contentContainerStyle={styles.popBody} keyboardShouldPersistTaps="handled">
+                  {children}
+                </ScrollView>
+              ) : (
+                <View style={[styles.popBody, { flexShrink: 1 }]}>{children}</View>
+              )}
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+    );
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} supportedOrientations={['portrait', 'landscape']}>
       <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
@@ -168,6 +272,30 @@ export function Chip({ label, selected, onPress, color }: { label: string; selec
 }
 
 const styles = StyleSheet.create({
+  iccTile: {
+    borderRadius: 26,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: 0.55,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 },
+  },
+  iccInner: { position: 'absolute', left: 2.5, top: 2.5, right: 2.5, bottom: 2.5, borderRadius: 23.5, overflow: 'hidden' },
+  iccPadded: { padding: 13 },
+  iccPopup: { borderRadius: 40, overflow: 'hidden', padding: 3, shadowColor: '#000', shadowOpacity: 0.8, shadowRadius: 30, shadowOffset: { width: 0, height: 20 } },
+  iccPopInner: { borderRadius: 37, backgroundColor: '#0b0d12', overflow: 'hidden', flexShrink: 1, paddingTop: 10 },
+  iccNeonBar: {
+    height: 3,
+    marginHorizontal: 30,
+    borderRadius: 2,
+    backgroundColor: '#ff3a1a',
+    shadowColor: '#ff2d14',
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  iccPopTitle: { fontFamily: F.display, fontSize: 13, letterSpacing: 3, color: '#e9ecf2', flexShrink: 1 },
+  iccClose: { width: 30, height: 30, borderRadius: 15, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   tile: {
     backgroundColor: C.glass,
     borderColor: C.hairline,

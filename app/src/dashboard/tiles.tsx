@@ -4,6 +4,8 @@ import { Alert, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'r
 import MapView, { Marker } from 'react-native-maps';
 import { PhotoImage } from '../components/PhotoThumb';
 import { Label, Sub, Tile } from '../design/Glass';
+import { useIcc } from '../design/skin';
+import { Stamped } from '../skins/icc/Stamped';
 import { Led } from '../design/Led';
 import { C, F, LAMP, LAMP_LABEL, NOTE_ACCENT } from '../design/tokens';
 import { distanceKm, roundCoord } from '../lib/geo';
@@ -93,6 +95,33 @@ export function PhotosTile({ c, style }: TileProps) {
 
 export function Lamps({ state, size = 11 }: { state: LightState | null; size?: number }) {
   const order: LightState[] = ['sleeping', 'busy', 'free'];
+  if (useIcc()) {
+    // ICC: drei Neonringe, nur der aktive leuchtet, die anderen sind kaltes Glas
+    const d = Math.round(size * 2);
+    return (
+      <View style={{ flexDirection: 'row', gap: d * 0.35 }}>
+        {order.map((s) => {
+          const on = state === s;
+          return (
+            <View
+              key={s}
+              style={{
+                width: d,
+                height: d,
+                borderRadius: d / 2,
+                borderWidth: Math.max(3, d * 0.13),
+                borderColor: on ? LAMP[s] : '#2a2d34',
+                shadowColor: LAMP[s],
+                shadowOpacity: on ? 1 : 0,
+                shadowRadius: d * 0.35,
+                shadowOffset: { width: 0, height: 0 },
+              }}
+            />
+          );
+        })}
+      </View>
+    );
+  }
   return (
     <View style={styles.lamps}>
       {order.map((s) => {
@@ -254,6 +283,29 @@ export function NotesTile({ c, style }: TileProps) {
   const top = notes[0];
   const body = opened(top?.body);
   const unseen = c.mode === 'partner' && notes.some((n) => !n.seenAt);
+  const icc = useIcc();
+
+  if (icc) {
+    // ICC: die ganze Kachel ist eine glatte Alu-Platte, die Schrift ist mit der Schreibmaschine eingeschlagen.
+    const tz = opened(c.view?.profile)?.tz;
+    const text = notes
+      .map((n) => opened(n.body)?.text)
+      .filter(Boolean)
+      .join('  ·  ');
+    return (
+      <Tile style={style} face="plate" onPress={() => c.open('notes')} label="Notiz">
+        <View style={{ flex: 1, justifyContent: 'space-between' }}>
+          {text ? (
+            <Stamped text={text} size={13} maxChars={90} />
+          ) : (
+            <Stamped text={c.mode === 'me' ? 'Notiz schreiben …' : 'Keine Notiz'} size={13} />
+          )}
+          {top ? <Stamped text={`${formatClock(top.createdAt, tz)} · ${remainingLabel(top.expiresAt, c.now).toUpperCase()}`} size={8} seed={7} /> : null}
+        </View>
+        {unseen ? <View style={styles.iccNew} /> : null}
+      </Tile>
+    );
+  }
 
   return (
     <Tile style={style} onPress={() => c.open('notes')} label="Post-its">
@@ -414,6 +466,7 @@ const styles = StyleSheet.create({
   photoPlus: { color: C.fg2, fontSize: 24 },
   photoFoot: { position: 'absolute', left: 12, right: 12, bottom: 12, gap: 2 },
   photoCount: { fontFamily: F.display, fontSize: 13, color: C.fg },
+  iccNew: { position: 'absolute', top: 10, right: 10, width: 7, height: 7, borderRadius: 4, backgroundColor: '#ffb547', shadowColor: '#ffb547', shadowOpacity: 1, shadowRadius: 5, shadowOffset: { width: 0, height: 0 } },
   lamps: { flexDirection: 'row', gap: 5, paddingHorizontal: 7, paddingVertical: 5, borderRadius: 999, backgroundColor: '#0b0d1a' },
   lightCol: { flex: 1, justifyContent: 'space-between' },
   lightTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 },

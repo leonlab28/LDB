@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, FlatList, PanResponder, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { PhotoImage } from '../components/PhotoThumb';
 import { Chip, Label, PillButton, Popup, Sub } from '../design/Glass';
@@ -11,6 +11,10 @@ import { agoLabel, formatClock, remainingLabel } from '../lib/time';
 import type { LightState, NoteColor } from '../lib/types';
 import { sendsReceipts, type DashCtx, type PopupKind } from './context';
 import { Lamps, MiniMap, shareLocationNow } from './tiles';
+import { LinearGradient } from 'expo-linear-gradient';
+import { PLATE } from '../design/Glass';
+import { SKINS, useIcc, useSkin } from '../design/skin';
+import { Stamped } from '../skins/icc/Stamped';
 
 const opened = <T,>(v: T | 'locked' | null | undefined): T | null => (v && v !== 'locked' ? v : null);
 
@@ -30,7 +34,7 @@ export function Popups({ c, which, onClose, settings }: { c: DashCtx; which: Pop
 }
 
 // ---------------------------------------------------------------------------------------------
-// Fotos: durchwischen, Herz (DrÃ¼ben) bzw. lÃ¶schen (Ich)
+// Fotos: durchwischen, Herz (Drüben) bzw. löschen (Ich)
 // ---------------------------------------------------------------------------------------------
 
 function PhotosPopup({ c, visible, onClose }: P) {
@@ -66,9 +70,9 @@ function PhotosPopup({ c, visible, onClose }: P) {
   }
 
   function remove(id: string) {
-    Alert.alert('Foto lÃ¶schen?', 'Es verschwindet sofort auch bei deinem Freund.', [
+    Alert.alert('Foto löschen?', 'Es verschwindet sofort auch bei deinem Freund.', [
       { text: 'Abbrechen', style: 'cancel' },
-      { text: 'LÃ¶schen', style: 'destructive', onPress: () => c.api.deletePhoto(id).then(c.refresh, (e) => c.toast(String(e))) },
+      { text: 'Löschen', style: 'destructive', onPress: () => c.api.deletePhoto(id).then(c.refresh, (e) => c.toast(String(e))) },
     ]);
   }
 
@@ -79,7 +83,7 @@ function PhotosPopup({ c, visible, onClose }: P) {
       title={photos.length ? `Fotos  ${index + 1}/${photos.length}` : 'Fotos'}
       scroll={false}
       wide
-      right={isMe ? <PillButton title={adding ? `LÃ¤dt ${adding}` : 'ï¼‹ Fotos'} onPress={add} disabled={!!adding} /> : undefined}
+      right={isMe ? <PillButton title={adding ? `Lädt ${adding}` : '＋ Fotos'} onPress={add} disabled={!!adding} /> : undefined}
     >
       {photos.length === 0 ? (
         <Sub style={{ paddingVertical: 30, textAlign: 'center' }}>{isMe ? 'Du hast heute noch nichts geteilt.' : 'Heute noch keine Fotos.'}</Sub>
@@ -101,15 +105,15 @@ function PhotosPopup({ c, visible, onClose }: P) {
                     {meta?.caption ? <Text style={styles.caption}>{meta.caption}</Text> : null}
                     <View style={styles.rowBetween}>
                       <Sub>
-                        {formatClock(item.createdAt)} Â· {remainingLabel(item.expiresAt, c.now)}
-                        {isMe && item.seenAt ? ' Â· ðŸ‘€ gesehen' : ''}
-                        {isMe && item.keptAt ? ' Â· â¤ï¸' : ''}
+                        {formatClock(item.createdAt)} · {remainingLabel(item.expiresAt, c.now)}
+                        {isMe && item.seenAt ? ' · 👀 gesehen' : ''}
+                        {isMe && item.keptAt ? ' · ❤️' : ''}
                       </Sub>
                       {isMe ? (
-                        <PillButton title="LÃ¶schen" kind="danger" onPress={() => remove(item.id)} />
+                        <PillButton title="Löschen" kind="danger" onPress={() => remove(item.id)} />
                       ) : (
                         <PillButton
-                          title={item.keptAt ? 'â¤ï¸ Behalten' : 'ðŸ¤ Herz'}
+                          title={item.keptAt ? '❤️ Behalten' : '🤍 Herz'}
                           onPress={() => {
                             if (item.keptAt || !sendsReceipts(c)) return;
                             c.api.markPhoto(item.id, 'keep').then(c.refresh, () => {});
@@ -129,10 +133,10 @@ function PhotosPopup({ c, visible, onClose }: P) {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Ampel: Details (DrÃ¼ben) bzw. feiner einstellen (Ich)
+// Ampel: Details (Drüben) bzw. feiner einstellen (Ich)
 // ---------------------------------------------------------------------------------------------
 
-const EMOJIS = ['ðŸ’¼', 'ðŸœ', 'ðŸƒ', 'ðŸŽ®', 'ðŸš‡', 'âœˆï¸', 'ðŸ“š', 'ðŸŽ‰'];
+const EMOJIS = ['💼', '🍜', '🏃', '🎮', '🚇', '✈️', '📚', '🎉'];
 const DURATIONS = [
   { label: '1 Std.', until: () => Date.now() + 3600_000 },
   { label: '3 Std.', until: () => Date.now() + 3 * 3600_000 },
@@ -183,7 +187,7 @@ function LightPopup({ c, visible, onClose }: P) {
           </Text>
           {raw?.note ? <Text style={styles.body}>{raw.note}</Text> : null}
           <Sub>{cur?.until ? `bis ${formatClock(cur.until, tz)} (Ortszeit dort)` : cur ? 'ohne Ende gesetzt' : ''}</Sub>
-          <Sub style={{ color: C.fg3 }}>Der Wochenplan, nach dem die Ampel von selbst schaltet, kommt in einem der nÃ¤chsten Schritte.</Sub>
+          <Sub style={{ color: C.fg3 }}>Der Wochenplan, nach dem die Ampel von selbst schaltet, kommt in einem der nächsten Schritte.</Sub>
         </View>
       ) : (
         <>
@@ -208,8 +212,8 @@ function LightPopup({ c, visible, onClose }: P) {
             ))}
           </View>
           <TextInput value={note} onChangeText={setNote} placeholder="Kurze Notiz (optional)" placeholderTextColor={C.fg3} maxLength={60} style={styles.input} />
-          <PillButton title={busy ? 'Setze â€¦' : 'Status setzen'} kind="amber" onPress={save} disabled={busy} />
-          <Sub style={{ color: C.fg3 }}>Schneller geht es direkt auf der Kachel: einmal tippen wechselt frei, busy und schlÃ¤ft.</Sub>
+          <PillButton title={busy ? 'Setze …' : 'Status setzen'} kind="amber" onPress={save} disabled={busy} />
+          <Sub style={{ color: C.fg3 }}>Schneller geht es direkt auf der Kachel: einmal tippen wechselt frei, busy und schläft.</Sub>
         </>
       )}
     </Popup>
@@ -217,12 +221,13 @@ function LightPopup({ c, visible, onClose }: P) {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Post-its: lesen (DrÃ¼ben) bzw. schreiben (Ich, Tastatur sofort offen)
+// Post-its: lesen (Drüben) bzw. schreiben (Ich, Tastatur sofort offen)
 // ---------------------------------------------------------------------------------------------
 
 const COLORS: NoteColor[] = ['yellow', 'pink', 'green', 'blue'];
 
 function NotesPopup({ c, visible, onClose }: P) {
+  const icc = useIcc();
   const notes = useMemo(() => [...(c.view?.notes ?? [])].sort((a, b) => b.createdAt - a.createdAt), [c.view?.notes]);
   const isMe = c.mode === 'me';
   const [text, setText] = useState('');
@@ -257,7 +262,7 @@ function NotesPopup({ c, visible, onClose }: P) {
   }
 
   return (
-    <Popup visible={visible} onClose={onClose} title="Post-its">
+    <Popup visible={visible} onClose={onClose} title={icc ? 'Notiz' : 'Post-its'}>
       {isMe && !c.mirror ? (
         <View style={{ gap: 10 }}>
           <TextInput
@@ -276,7 +281,7 @@ function NotesPopup({ c, visible, onClose }: P) {
                 <Pressable key={col} onPress={() => setColor(col)} style={[styles.swatch, { backgroundColor: NOTE_ACCENT[col] }, color === col && styles.swatchOn]} accessibilityLabel={`Farbe ${col}`} />
               ))}
             </View>
-            <PillButton title={busy ? 'â€¦' : 'Anheften'} kind="amber" onPress={add} disabled={busy || !text.trim()} />
+            <PillButton title={busy ? '…' : 'Anheften'} kind="amber" onPress={add} disabled={busy || !text.trim()} />
           </View>
           <Sub style={{ color: C.fg3 }}>Bleibt 24 Stunden, dann verschwindet es von selbst.</Sub>
         </View>
@@ -285,17 +290,31 @@ function NotesPopup({ c, visible, onClose }: P) {
       <View style={styles.notesGrid}>
         {notes.map((n) => {
           const b = opened(n.body);
+          if (icc)
+            return (
+              <LinearGradient key={n.id} colors={PLATE} locations={[0, 0.45, 0.75, 1]} style={styles.iccPlate}>
+                <Stamped text={b ? b.text : '🔒'} size={17} />
+                <View style={[styles.rowBetween, { marginTop: 14 }]}>
+                  <Stamped text={`${remainingLabel(n.expiresAt, c.now).toUpperCase()}${isMe && n.seenAt ? ' · GELESEN' : ''}`} size={9} seed={3} />
+                  {isMe && !c.mirror ? (
+                    <Pressable onPress={() => c.api.deleteNote(n.id).then(c.refresh, (e) => c.toast(String(e)))} hitSlop={10}>
+                      <Stamped text="✕" size={13} />
+                    </Pressable>
+                  ) : null}
+                </View>
+              </LinearGradient>
+            );
           return (
             <View key={n.id} style={[styles.postit, { borderLeftColor: b ? NOTE_ACCENT[b.color] : C.fg3 }]}>
-              <Text style={styles.postitText}>{b ? b.text : 'ðŸ”’'}</Text>
+              <Text style={styles.postitText}>{b ? b.text : '🔒'}</Text>
               <View style={styles.rowBetween}>
                 <Text style={styles.postitFoot}>
                   {remainingLabel(n.expiresAt, c.now)}
-                  {isMe && n.seenAt ? ' Â· ðŸ‘€' : ''}
+                  {isMe && n.seenAt ? ' · 👀' : ''}
                 </Text>
                 {isMe && !c.mirror ? (
                   <Pressable onPress={() => c.api.deleteNote(n.id).then(c.refresh, (e) => c.toast(String(e)))} hitSlop={10}>
-                    <Text style={styles.postitFoot}>âœ•</Text>
+                    <Text style={styles.postitFoot}>✕</Text>
                   </Pressable>
                 ) : null}
               </View>
@@ -342,7 +361,7 @@ function MapPopup({ c, visible, onClose }: P) {
         </View>
       ) : null}
       <Sub>
-        Auf etwa 1 km gerundet, verschlÃ¼sselt.
+        Auf etwa 1 km gerundet, verschlüsselt.
         {c.view?.locationUpdatedAt ? ` Zuletzt ${agoLabel(c.view.locationUpdatedAt, c.now)}.` : ''}
       </Sub>
       {isMe && !c.mirror ? (
@@ -418,11 +437,11 @@ function CalendarPopup({ c, visible, onClose }: P) {
       </View>
       <View style={styles.rowBetween}>
         <Pressable onPress={() => step(-1)} hitSlop={12}>
-          <Text style={styles.arrow}>â€¹</Text>
+          <Text style={styles.arrow}>‹</Text>
         </Pressable>
         <Text style={styles.calTitle}>{title}</Text>
         <Pressable onPress={() => step(1)} hitSlop={12}>
-          <Text style={styles.arrow}>â€º</Text>
+          <Text style={styles.arrow}>›</Text>
         </Pressable>
       </View>
       <View {...pan.panHandlers} style={{ minHeight: 220 }}>
@@ -491,7 +510,7 @@ function MonthGrid({ day, onPick }: { day: number; onPick: (d: number) => void }
 }
 
 // ---------------------------------------------------------------------------------------------
-// Einstellungen (Zahnrad auf â€žIchâ€œ): Name, GerÃ¤t, Entwickler-Vorschau
+// Einstellungen (Zahnrad auf „Ich“): Name, Gerät, Entwickler-Vorschau
 // ---------------------------------------------------------------------------------------------
 
 export function SettingsPopup({
@@ -503,6 +522,7 @@ export function SettingsPopup({
   onMirrorChange,
 }: P & { onLogout: () => void; mirror: boolean; onMirrorChange: (on: boolean) => void }) {
   const profile = opened(c.me?.profile);
+  const { skin, setSkin } = useSkin();
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
   useEffect(() => {
@@ -527,14 +547,22 @@ export function SettingsPopup({
       <Label>Dein Name</Label>
       <View style={[styles.rowBetween, { gap: 8 }]}>
         <TextInput value={name} onChangeText={setName} placeholder="Name" placeholderTextColor={C.fg3} maxLength={40} style={[styles.input, { flex: 1 }]} />
-        <PillButton title={busy ? 'â€¦' : 'Speichern'} kind="amber" onPress={save} disabled={busy || !name.trim()} />
+        <PillButton title={busy ? '…' : 'Speichern'} kind="amber" onPress={save} disabled={busy || !name.trim()} />
       </View>
       <Sub>Zeitzone: {c.myTz}. Folgt automatisch dem iPhone, auch auf Reisen.</Sub>
+
+      <Label style={{ marginTop: 8 }}>Design</Label>
+      <View style={styles.wrap}>
+        {SKINS.map((s) => (
+          <Chip key={s.id} label={s.label} selected={skin === s.id} onPress={() => setSkin(s.id)} />
+        ))}
+      </View>
+      <Sub>Gilt nur für dich auf diesem iPhone. Dein Freund sieht sein eigenes Design.</Sub>
 
       {__DEV__ ? (
         <>
           <Label style={{ marginTop: 8 }}>Entwicklung (nur in Expo Go)</Label>
-          <Sub>Vorschau: â€žDrÃ¼benâ€œ zeigt deine eigenen Inhalte so, wie dein Freund sie sieht. Es wird nichts als gesehen markiert.</Sub>
+          <Sub>Vorschau: „Drüben“ zeigt deine eigenen Inhalte so, wie dein Freund sie sieht. Es wird nichts als gesehen markiert.</Sub>
           <View style={styles.wrap}>
             <Chip label="Aus" selected={!mirror} onPress={() => onMirrorChange(false)} />
             <Chip label="Vorschau an" selected={mirror} onPress={() => onMirrorChange(true)} />
@@ -542,13 +570,13 @@ export function SettingsPopup({
         </>
       ) : null}
 
-      <Label style={{ marginTop: 8 }}>GerÃ¤t</Label>
-      <Sub>Inhalte sind Ende-zu-Ende verschlÃ¼sselt. Der Server sieht nur Zeitpunkte und GrÃ¶ÃŸen. Person {c.me?.person ?? 'â€“'}.</Sub>
+      <Label style={{ marginTop: 8 }}>Gerät</Label>
+      <Sub>Inhalte sind Ende-zu-Ende verschlüsselt. Der Server sieht nur Zeitpunkte und Größen. Person {c.me?.person ?? '–'}.</Sub>
       <PillButton
         title="Abmelden"
         kind="danger"
         onPress={() =>
-          Alert.alert('Abmelden?', 'Der SchlÃ¼ssel wird von diesem iPhone gelÃ¶scht. Zum erneuten Koppeln brauchst du den Kopplungslink.', [
+          Alert.alert('Abmelden?', 'Der Schlüssel wird von diesem iPhone gelöscht. Zum erneuten Koppeln brauchst du den Kopplungslink.', [
             { text: 'Abbrechen', style: 'cancel' },
             { text: 'Abmelden', style: 'destructive', onPress: onLogout },
           ])
@@ -575,6 +603,7 @@ const styles = StyleSheet.create({
   swatch: { width: 26, height: 26, borderRadius: 13, borderWidth: 2, borderColor: 'transparent' },
   swatchOn: { borderColor: '#fff' },
   notesGrid: { gap: 8 },
+  iccPlate: { borderRadius: 20, padding: 18, borderWidth: 1, borderColor: '#6c727b' },
   postit: { padding: 12, borderRadius: 12, borderLeftWidth: 3, backgroundColor: C.glass, gap: 6 },
   postitText: { fontSize: 16, lineHeight: 22, color: C.fg },
   postitFoot: { fontSize: 12, color: C.fg3 },

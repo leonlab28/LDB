@@ -1,4 +1,5 @@
 // Nur die benötigten Schnitte laden (der Paket-Index würde alle Gewichte mitbündeln).
+import { CourierPrime_700Bold } from '@expo-google-fonts/courier-prime/700Bold';
 import { Michroma_400Regular } from '@expo-google-fonts/michroma/400Regular';
 import { useFonts } from 'expo-font';
 import * as Localization from 'expo-localization';
@@ -11,6 +12,7 @@ import type { DashCtx, Mode, PopupKind } from './dashboard/context';
 import { Dashboard } from './dashboard/Dashboard';
 import { Popups, SettingsPopup } from './dashboard/popups';
 import { Backdrop } from './design/Glass';
+import { SkinProvider } from './design/skin';
 import { C, F } from './design/tokens';
 import { Api, ApiError } from './lib/api';
 import { clearSession, loadSession, type Session } from './lib/session';
@@ -28,6 +30,7 @@ export default function App() {
   const [fontsLoaded] = useFonts({
     Michroma: Michroma_400Regular,
     DSEG7: require('../assets/fonts/DSEG7Classic-Bold.ttf'),
+    CourierPrimeBold: CourierPrime_700Bold,
   });
 
   useEffect(() => {
@@ -36,14 +39,16 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar style="light" />
-      <Backdrop>
-        {session === undefined || !fontsLoaded ? null : session ? (
-          <Main session={session} onLogout={() => clearSession().then(() => setSession(null))} />
-        ) : (
-          <PairingScreen onPaired={setSession} />
-        )}
-      </Backdrop>
+      <SkinProvider>
+        <StatusBar style="light" />
+        <Backdrop>
+          {session === undefined || !fontsLoaded ? null : session ? (
+            <Main session={session} onLogout={() => clearSession().then(() => setSession(null))} />
+          ) : (
+            <PairingScreen onPaired={setSession} />
+          )}
+        </Backdrop>
+      </SkinProvider>
     </SafeAreaProvider>
   );
 }

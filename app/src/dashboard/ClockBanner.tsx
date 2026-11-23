@@ -2,7 +2,9 @@ import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Led, ledWidth } from '../design/Led';
 import { C, F } from '../design/tokens';
+import { useIcc } from '../design/skin';
 import { differenceLabel, hourIn } from '../lib/time';
+import { IccClockBanner } from '../skins/icc/IccClockBanner';
 
 const DAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 
@@ -34,16 +36,7 @@ const DEV_RIGHT_GAP = __DEV__ ? 54 : 0;
  * Eingebettete Uhr mit Tag und Wetter. Keine Kachel, kein Rahmen: sie liegt direkt auf dem Hintergrund,
  * im Hochformat als Banner oben, im Querformat links oben.
  */
-export function ClockBanner({
-  name,
-  tz,
-  myTz,
-  now,
-  width,
-  height,
-  showDifference,
-  corner,
-}: {
+type BannerProps = {
   name: string;
   tz: string | null;
   myTz: string;
@@ -52,7 +45,13 @@ export function ClockBanner({
   height: number;
   showDifference: boolean;
   corner?: ReactNode;
-}) {
+};
+
+export function ClockBanner(props: BannerProps) {
+  return useIcc() ? <IccClockBanner {...props} /> : <StandardClockBanner {...props} />;
+}
+
+function StandardClockBanner({ name, tz, myTz, now, width, height, showDifference, corner }: BannerProps) {
   const zone = tz ?? myTz;
   const p = parts(now, zone);
   const h = hourIn(zone, now);
