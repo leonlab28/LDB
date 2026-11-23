@@ -46,31 +46,45 @@ export async function safeEqual(a: string, b: string): Promise<boolean> {
   return diff === 0;
 }
 
-export function isValidTimezone(tz: unknown): tz is string {
-  if (typeof tz !== "string" || tz.length > 64) return false;
-  try {
-    new Intl.DateTimeFormat("en-US", { timeZone: tz });
-    return true;
-  } catch {
-    return false;
-  }
+/** Gerätseitig erzeugte IDs (Notizen, Fotos, Sprachnachrichten) sind UUIDs in Kleinschreibung. */
+export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+// ---------------------------------------------------------------------------
+// Umschläge (siehe docs/encryption.md): Version 0x01 | Nonce (12) | Chiffrat | Tag (16).
+// Der Server kann sie nicht öffnen. Er prüft nur die Form, damit nie versehentlich Klartext
+// gespeichert wird (ein JPEG beginnt z. B. mit 0xFF, JSON mit "{").
+// ---------------------------------------------------------------------------
+
+export const ENVELOPE_VERSION = 1;
+export const ENVELOPE_OVERHEAD = 1 + 12 + 16;
+const MIN_ENVELOPE_CHARS = Math.ceil((ENVELOPE_OVERHEAD * 4) / 3);
+
+export function isEnvelopeText(v: unknown, maxChars: number): v is string {
+  if (typeof v !== "string" || v.length < MIN_ENVELOPE_CHARS || v.length > maxChars) return false;
+  if (!/^[A-Za-z0-9_-]+$/.test(v)) return false;
+  return atob(v.slice(0, 4).replace(/-/g, "+").replace(/_/g, "/")).charCodeAt(0) === ENVELOPE_VERSION;
 }
 
-/** Standort grob runden (~1 km), damit nie ein metergenauer Punkt gespeichert wird. */
-export function roundCoord(v: unknown, max: number): number {
-  if (typeof v !== "number" || !Number.isFinite(v) || Math.abs(v) > max) {
-    throw new HttpError(400, "Ungültige Koordinate");
+export function requireEnvelopeText(v: unknown, maxChars: number, field: string): string {
+  if (!isEnvelopeText(v, maxChars)) throw new HttpError(400, `Feld ${field} ist kein gültiger Umschlag`);
+  return v;
+}
+
+/** Liest einen binären Umschlag als Rohdaten (application/octet-stream), mit Größenprüfung vor dem Lesen. */
+export async function readEnvelopeBody(req: Request, maxBytes: number): Promise<ArrayBuffer> {
+  const declared = Number(req.headers.get("content-length"));
+  if (Number.isFinite(declared) && declared > maxBytes) throw new HttpError(413, "Datei zu groß");
+  const buf = await req.arrayBuffer();
+  if (buf.byteLength > maxBytes) throw new HttpError(413, "Datei zu groß");
+  const bytes = new Uint8Array(buf);
+  if (bytes.byteLength < ENVELOPE_OVERHEAD || bytes[0] !== ENVELOPE_VERSION) {
+    throw new HttpError(400, "Inhalt ist kein gültiger Umschlag");
   }
-  return Math.round(v * 100) / 100;
+  return buf;
 }
 
 export function optString(v: unknown, maxLen: number, field: string): string | null {
   if (v === undefined || v === null || v === "") return null;
   if (typeof v !== "string" || v.length > maxLen) throw new HttpError(400, `Feld ${field} ungültig`);
   return v;
-}
-
-export function getFile(form: FormData, name: string): File | null {
-  const v = form.get(name) as unknown;
-  return v && typeof v === "object" && "arrayBuffer" in v ? (v as File) : null;
 }

@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "LDB",
+    "slug": "ldb",
+    "scheme": "ldb",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "platforms": [
+      "ios"
+    ],
+    "ios": {
+      "bundleIdentifier": "com.leonlab28.ldb",
+      "supportsTablet": false
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-localization",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "LDB teilt auf Wunsch deinen ungefähren Ort (auf ~1 km gerundet, verschlüsselt), damit ihr eure Entfernung seht."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "LDB braucht Zugriff auf deine Fotos, damit du Bilder verschlüsselt in den 24-h-Foto-Dump teilen kannst.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ]
+    ]
+  }
+}

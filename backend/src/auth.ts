@@ -3,7 +3,10 @@ import { HttpError, json, randomKey, readJson, safeEqual, sha256Hex, optString }
 export interface Env {
   DB: D1Database;
   MEDIA: R2Bucket;
-  /** Secret, gesetzt per `wrangler secret put PAIRING_CODE`. Nie ins Repo schreiben. */
+  /**
+   * Kopplungscode, abgeleitet aus dem gemeinsamen Geheimnis S (HKDF, siehe docs/encryption.md).
+   * Gesetzt per `npm run secret:new -- --server … --put`. Aus ihm lässt sich der Inhaltsschlüssel nicht berechnen.
+   */
   PAIRING_CODE?: string;
   /** "true", solange neue Geräte gekoppelt werden dürfen. Danach auf "false" stellen und neu deployen. */
   REGISTRATION_OPEN?: string;

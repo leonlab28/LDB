@@ -6,21 +6,24 @@ import { HttpError, json } from "./util";
 type Handler = (req: Request, env: Env, c: Caller, params: string[], url: URL) => Promise<Response>;
 
 const ID = "([0-9a-f-]{36})";
+const KIND = "([a-z]+)";
 
 // [Methode, Pfad-Regex, Handler]. Alle Routen außer /health und /register brauchen einen Geräteschlüssel.
+// Inhalte sind durchgehend Umschläge (Ende-zu-Ende verschlüsselt, siehe docs/encryption.md).
 const routes: [string, RegExp, Handler][] = [
   ["GET", /^\/v1\/me$/, (_r, e, c) => f.getMe(e, c)],
   ["GET", /^\/v1\/partner$/, (_r, e, c) => f.getPartner(e, c)],
-  ["PUT", /^\/v1\/me\/profile$/, (r, e, c) => f.putProfile(r, e, c)],
-  ["PUT", /^\/v1\/me\/traffic-light$/, (r, e, c) => f.putTrafficLight(r, e, c)],
-  ["PUT", /^\/v1\/me\/location$/, (r, e, c) => f.putLocation(r, e, c)],
 
-  ["PUT", /^\/v1\/me\/voice$/, (r, e, c) => f.putVoice(r, e, c)],
+  ["PUT", new RegExp(`^/v1/me/state/${KIND}$`), (r, e, c, p) => f.putState(r, e, c, p[0])],
+  ["DELETE", new RegExp(`^/v1/me/state/${KIND}$`), (_r, e, c, p) => f.deleteState(e, c, p[0])],
+
+  ["PUT", new RegExp(`^/v1/me/voice/${ID}$`), (r, e, c, p) => f.putVoice(r, e, c, p[0])],
   ["DELETE", /^\/v1\/me\/voice$/, (_r, e, c) => f.deleteVoice(e, c)],
-  ["GET", /^\/v1\/partner\/voice$/, (_r, e, c) => f.getPartnerVoice(e, c)],
-  ["POST", /^\/v1\/partner\/voice\/listened$/, (_r, e, c) => f.markVoiceListened(e, c)],
+  ["GET", new RegExp(`^/v1/partner/voice/${ID}$`), (_r, e, c, p) => f.getPartnerVoice(e, c, p[0])],
+  ["POST", new RegExp(`^/v1/partner/voice/${ID}/listened$`), (_r, e, c, p) => f.markVoiceListened(e, c, p[0])],
 
-  ["POST", /^\/v1\/me\/photos$/, (r, e, c) => f.postPhoto(r, e, c)],
+  ["PUT", new RegExp(`^/v1/me/photos/${ID}$`), (r, e, c, p) => f.putPhoto(r, e, c, p[0])],
+  ["PUT", new RegExp(`^/v1/me/photos/${ID}/thumb$`), (r, e, c, p) => f.putPhotoThumb(r, e, c, p[0])],
   ["DELETE", new RegExp(`^/v1/me/photos/${ID}$`), (_r, e, c, p) => f.deletePhoto(e, c, p[0])],
   ["GET", new RegExp(`^/v1/partner/photos/${ID}$`), (_r, e, c, p, u) => f.getPartnerPhoto(e, c, p[0], u)],
   ["POST", new RegExp(`^/v1/partner/photos/${ID}/seen$`), (_r, e, c, p) => f.markPhoto(e, c, p[0], "seen_at")],

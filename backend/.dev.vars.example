@@ -1,2 +1,3 @@
 # Kopieren nach .dev.vars (wird nicht eingecheckt) für `npm run dev`.
-PAIRING_CODE=lokaler-test-code-123
+# Abgeleitet aus dem Test-Geheimnis in docs/crypto-test-vectors.json. Nur lokal verwenden!
+PAIRING_CODE=jA5Cu3mOETCWWsWmHuvMqGjjonG1WSSgwh6qsc5YarU
