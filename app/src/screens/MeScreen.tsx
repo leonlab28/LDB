@@ -117,13 +117,31 @@ export function MeScreen({
 
   const sharePhoto = () =>
     run('photo', async () => {
-      const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 1 });
+      const res = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 1,
+        allowsMultipleSelection: true,
+        orderedSelection: true,
+        selectionLimit: 10,
+      });
       if (res.canceled || !res.assets.length) return;
-      const asset = res.assets[0];
-      const full = await jpegFrom(asset.uri, 2048, asset, 0.8);
-      const thumb = await jpegFrom(asset.uri, 360, asset, 0.6);
-      await api.uploadPhoto(full.bytes, thumb.bytes, { caption: caption.trim().slice(0, 80) || null, width: full.width, height: full.height });
-      setCaption('');
+      // Bildunterschrift gilt für alle ausgewählten Fotos. Nacheinander hochladen, damit der Speicher
+      // nicht mit mehreren großen Bildern gleichzeitig vollläuft.
+      const text = caption.trim().slice(0, 80) || null;
+      let done = 0;
+      try {
+        for (const asset of res.assets) {
+          const full = await jpegFrom(asset.uri, 2048, asset, 0.8);
+          const thumb = await jpegFrom(asset.uri, 360, asset, 0.6);
+          await api.uploadPhoto(full.bytes, thumb.bytes, { caption: text, width: full.width, height: full.height });
+          done++;
+        }
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        throw new Error(done > 0 ? `${done} von ${res.assets.length} Fotos geteilt. Danach: ${msg}` : msg);
+      } finally {
+        if (done > 0) setCaption('');
+      }
     });
 
   const logout = () =>
@@ -270,7 +288,7 @@ export function MeScreen({
               maxLength={80}
               style={[styles.input, { color: t.text, borderColor: t.border }]}
             />
-            <Button title="Foto auswählen und teilen" onPress={sharePhoto} busy={busy === 'photo'} />
+            <Button title="Fotos auswählen und teilen" onPress={sharePhoto} busy={busy === 'photo'} />
             {me?.photos.map((p) => (
               <Row key={p.id} style={styles.photoRow}>
                 <Body style={{ flex: 1 }}>
