@@ -45,6 +45,9 @@ function Main({ session, onLogout }: { session: Session; onLogout: () => void })
   const [partner, setPartner] = useState<LdbView | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Nur Entwicklung: „Drüben“ zeigt die eigenen Inhalte so, wie der Partner sie sieht.
+  const [mirror, setMirror] = useState(false);
+  const mirrorOn = __DEV__ && mirror;
   const myTz = deviceTimezone();
   const tzSynced = useRef(false);
 
@@ -101,9 +104,29 @@ function Main({ session, onLogout }: { session: Session; onLogout: () => void })
       ) : null}
       <View style={{ flex: 1 }}>
         {tab === 'partner' ? (
-          <PartnerScreen api={api} partner={partner} me={me} myTz={myTz} refreshing={refreshing} onRefresh={refresh} />
+          <PartnerScreen
+            api={api}
+            partner={mirrorOn ? me : partner}
+            me={me}
+            myTz={myTz}
+            refreshing={refreshing}
+            onRefresh={refresh}
+            mirror={mirrorOn}
+          />
         ) : (
-          <MeScreen api={api} me={me} myTz={myTz} refreshing={refreshing} onRefresh={refresh} onLogout={onLogout} />
+          <MeScreen
+            api={api}
+            me={me}
+            myTz={myTz}
+            refreshing={refreshing}
+            onRefresh={refresh}
+            onLogout={onLogout}
+            mirror={mirrorOn}
+            onMirrorChange={(on) => {
+              setMirror(on);
+              if (on) setTab('partner');
+            }}
+          />
         )}
       </View>
       <View style={[styles.tabs, { paddingBottom: insets.bottom || 12, borderColor: t.border, backgroundColor: t.card }]}>

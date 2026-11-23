@@ -25,6 +25,7 @@ const routes: [string, RegExp, Handler][] = [
   ["PUT", new RegExp(`^/v1/me/photos/${ID}$`), (r, e, c, p) => f.putPhoto(r, e, c, p[0])],
   ["PUT", new RegExp(`^/v1/me/photos/${ID}/thumb$`), (r, e, c, p) => f.putPhotoThumb(r, e, c, p[0])],
   ["DELETE", new RegExp(`^/v1/me/photos/${ID}$`), (_r, e, c, p) => f.deletePhoto(e, c, p[0])],
+  ["GET", new RegExp(`^/v1/me/photos/${ID}$`), (_r, e, c, p, u) => f.getOwnPhoto(e, c, p[0], u)],
   ["GET", new RegExp(`^/v1/partner/photos/${ID}$`), (_r, e, c, p, u) => f.getPartnerPhoto(e, c, p[0], u)],
   ["POST", new RegExp(`^/v1/partner/photos/${ID}/seen$`), (_r, e, c, p) => f.markPhoto(e, c, p[0], "seen_at")],
   ["POST", new RegExp(`^/v1/partner/photos/${ID}/keep$`), (_r, e, c, p) => f.markPhoto(e, c, p[0], "kept_at")],
