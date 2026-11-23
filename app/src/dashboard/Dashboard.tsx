@@ -16,11 +16,11 @@ type Box = { left: number; top: number; width: number; height: number };
 function layout(W: number, H: number) {
   const g = GAP;
   if (W <= H * 1.1) {
-    const clockH = Math.max(140, Math.min(H * 0.25, 260));
+    const clockH = Math.max(130, Math.min(H * 0.23, 240));
     const rest = H - clockH - 3 * g;
-    const rowA = rest * 0.42;
-    const rowB = rest * 0.36;
-    const rowC = rest - rowA - rowB;
+    const rowC = Math.max(58, Math.min(rest * 0.13, 84)); // Kalender: schmale Leiste
+    const rowA = (rest - rowC) * 0.53;
+    const rowB = rest - rowC - rowA;
     const s = Math.min(W * 0.38, rowA - g - 60); // Sprache: quadratisch
     const photosW = W - g - s;
     const yA = clockH + g;
@@ -43,7 +43,7 @@ function layout(W: number, H: number) {
   const lowH = H - clockH - g;
   const s = Math.min(lowH, L * 0.48);
   const colW = L - s - g;
-  const lightH = Math.max(56, (lowH - g) * 0.42);
+  const lightH = Math.max(64, (lowH - g) * 0.5);
   const R = W - L - g;
   const photosH = (H - g) * 0.56;
   const lowR = H - photosH - g;

@@ -3,7 +3,7 @@ import { Alert, FlatList, PanResponder, Pressable, StyleSheet, Text, TextInput, 
 import { PhotoImage } from '../components/PhotoThumb';
 import { Chip, Label, PillButton, Popup, Sub } from '../design/Glass';
 import { Led } from '../design/Led';
-import { C, F, LAMP, LAMP_LABEL, NOTE_BG } from '../design/tokens';
+import { C, F, LAMP, LAMP_LABEL, NOTE_ACCENT } from '../design/tokens';
 import { distanceKm } from '../lib/geo';
 import { currentLight, nextLocalTime } from '../lib/light';
 import { pickAndSharePhotos } from '../lib/photos';
@@ -264,16 +264,16 @@ function NotesPopup({ c, visible, onClose }: P) {
             value={text}
             onChangeText={setText}
             placeholder="Was willst du anheften?"
-            placeholderTextColor="rgba(59,48,36,0.5)"
+            placeholderTextColor={C.fg3}
             multiline
             autoFocus
             maxLength={500}
-            style={[styles.noteInput, { backgroundColor: NOTE_BG[color] }]}
+            style={[styles.noteInput, { borderLeftColor: NOTE_ACCENT[color] }]}
           />
           <View style={[styles.rowBetween, { gap: 8 }]}>
             <View style={styles.wrap}>
               {COLORS.map((col) => (
-                <Pressable key={col} onPress={() => setColor(col)} style={[styles.swatch, { backgroundColor: NOTE_BG[col] }, color === col && styles.swatchOn]} />
+                <Pressable key={col} onPress={() => setColor(col)} style={[styles.swatch, { backgroundColor: NOTE_ACCENT[col] }, color === col && styles.swatchOn]} accessibilityLabel={`Farbe ${col}`} />
               ))}
             </View>
             <PillButton title={busy ? 'â€¦' : 'Anheften'} kind="amber" onPress={add} disabled={busy || !text.trim()} />
@@ -283,10 +283,10 @@ function NotesPopup({ c, visible, onClose }: P) {
       ) : null}
       {notes.length === 0 ? <Sub style={{ textAlign: 'center', paddingVertical: 16 }}>{isMe ? 'Noch nichts angeheftet.' : 'Keine Post-its.'}</Sub> : null}
       <View style={styles.notesGrid}>
-        {notes.map((n, i) => {
+        {notes.map((n) => {
           const b = opened(n.body);
           return (
-            <View key={n.id} style={[styles.postit, { backgroundColor: b ? NOTE_BG[b.color] : C.glass2, transform: [{ rotate: `${i % 2 ? 1.5 : -1.5}deg` }] }]}>
+            <View key={n.id} style={[styles.postit, { borderLeftColor: b ? NOTE_ACCENT[b.color] : C.fg3 }]}>
               <Text style={styles.postitText}>{b ? b.text : 'ðŸ”’'}</Text>
               <View style={styles.rowBetween}>
                 <Text style={styles.postitFoot}>
@@ -571,13 +571,13 @@ const styles = StyleSheet.create({
   lampBtnOn: { borderColor: 'rgba(255,255,255,0.35)', backgroundColor: C.glass2 },
   lampBig: { width: 28, height: 28, borderRadius: 14, shadowRadius: 10, shadowOffset: { width: 0, height: 0 } },
   lampText: { fontFamily: F.display, fontSize: 12, color: C.fg2 },
-  noteInput: { minHeight: 110, borderRadius: 4, padding: 12, fontFamily: F.hand, fontSize: 24, color: C.noteInk, textAlignVertical: 'top' },
-  swatch: { width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: 'transparent' },
+  noteInput: { minHeight: 96, borderRadius: 12, padding: 12, borderLeftWidth: 3, backgroundColor: C.glass2, fontSize: 16, lineHeight: 22, color: C.fg, textAlignVertical: 'top' },
+  swatch: { width: 26, height: 26, borderRadius: 13, borderWidth: 2, borderColor: 'transparent' },
   swatchOn: { borderColor: '#fff' },
-  notesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  postit: { width: '47%', minHeight: 110, padding: 10, borderRadius: 3, borderBottomRightRadius: 12, justifyContent: 'space-between', gap: 8 },
-  postitText: { fontFamily: F.hand, fontSize: 22, lineHeight: 24, color: C.noteInk },
-  postitFoot: { fontSize: 11, color: 'rgba(59,48,36,0.6)' },
+  notesGrid: { gap: 8 },
+  postit: { padding: 12, borderRadius: 12, borderLeftWidth: 3, backgroundColor: C.glass, gap: 6 },
+  postitText: { fontSize: 16, lineHeight: 22, color: C.fg },
+  postitFoot: { fontSize: 12, color: C.fg3 },
   mapBox: { height: 260, borderRadius: 14, overflow: 'hidden', backgroundColor: C.glass, justifyContent: 'center' },
   segment: { flexDirection: 'row', backgroundColor: C.glass, borderRadius: 999, padding: 3, alignSelf: 'center' },
   segBtn: { paddingHorizontal: 16, paddingVertical: 6, borderRadius: 999 },

@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
     borderRadius: R.tile,
     overflow: 'hidden',
   },
-  padded: { padding: 14 },
+  padded: { padding: 12 },
   pressed: { backgroundColor: C.glass2 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   popup: {
