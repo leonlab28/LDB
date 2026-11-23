@@ -1,0 +1,30 @@
+{
+  "comment": "Feste Nonce nur für Tests. Im Betrieb ist die Nonce immer zufällig.",
+  "secret": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8",
+  "pairing_code": "jA5Cu3mOETCWWsWmHuvMqGjjonG1WSSgwh6qsc5YarU",
+  "content_key_hex": "5b86dd62dbc9715e5f90df8a6289354400cd1f3acc66c153e728dbb8ec97dc2a",
+  "nonce_hex": "000102030405060708090a0b",
+  "cases": [
+    {
+      "kind": "profile",
+      "person": "a",
+      "id": null,
+      "value": {
+        "name": "Leon",
+        "tz": "Europe/Berlin"
+      },
+      "envelope": "AQABAgMEBQYHCAkKC-Tki6yy_Ns_ag2dfodbPFqOrLTZ0ScP7AZ82nKYYjP1NTkR75y2kBbAd3ChvpIvezv18km8Pr0-CgWxwePEFVSHvpBpcdmeqeYPaNGh_yZK"
+    },
+    {
+      "kind": "note",
+      "person": "b",
+      "id": "6f9619ff-8b86-4011-b42d-00c04fc964ff",
+      "value": {
+        "text": "Guten Morgen 🌅",
+        "color": "yellow",
+        "done": false
+      },
+      "envelope": "AQABAgMEBQYHCAkKC-Tkkain7ds_agaNZYwXMDWVpPGGnUKKAeWJnXH4ZC71MyURqJ7v1VqMOCejspBrNHWw8FP6f_FtT1ixwePEFVSS1l_1kZwxK9ngwCAfOOWH"
+    }
+  ]
+}

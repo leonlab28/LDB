@@ -1,0 +1,36 @@
+{
+  "name": "ldb-app",
+  "version": "0.1.0",
+  "main": "index.ts",
+  "dependencies": {
+    "@noble/ciphers": "^2.4.0",
+    "@noble/hashes": "^2.4.0",
+    "@scure/base": "^2.4.0",
+    "expo": "~58.0.26",
+    "expo-crypto": "~58.0.8",
+    "expo-image-manipulator": "~58.0.16",
+    "expo-image-picker": "~58.0.10",
+    "expo-localization": "~58.0.5",
+    "expo-location": "~58.0.22",
+    "expo-secure-store": "~58.0.3",
+    "expo-status-bar": "~58.0.5",
+    "react": "19.3.0",
+    "react-native": "0.88.1",
+    "react-native-safe-area-context": "~5.11.1"
+  },
+  "devDependencies": {
+    "@expo/ngrok": "^4.1.0",
+    "@types/react": "~19.3.0",
+    "typescript": "~6.0.3"
+  },
+  "scripts": {
+    "start": "expo start",
+    "start:tunnel": "expo start --tunnel",
+    "typecheck": "tsc --noEmit",
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-crypto.mjs",
+    "build:ios": "npx eas-cli@latest build --platform ios --profile production",
+    "submit:ios": "npx eas-cli@latest submit --platform ios --latest",
+    "test:api": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning scripts/test-api.mjs"
+  },
+  "private": true
+}

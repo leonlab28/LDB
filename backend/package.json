@@ -8,11 +8,17 @@
     "typecheck": "tsc --noEmit",
     "db:migrate:local": "wrangler d1 migrations apply ldb --local",
     "db:migrate:remote": "wrangler d1 migrations apply ldb --remote",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "secret:new": "node scripts/new-secret.mjs",
+    "test:vectors": "node scripts/test-vectors.mjs"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20261122.2",
     "typescript": "^5.9.0",
     "wrangler": "^4.166.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "workerd@1.20261119.1": true
   }
 }
