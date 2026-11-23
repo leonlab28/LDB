@@ -215,10 +215,19 @@ export async function deletePhoto(env: Env, c: Caller, id: string) {
 
 /** GET /v1/partner/photos/:id?size=thumb */
 export async function getPartnerPhoto(env: Env, c: Caller, id: string, url: URL) {
+  return getPhoto(env, c.partnerId, id, url);
+}
+
+/** GET /v1/me/photos/:id?size=thumb  Eigenes Foto (Umschlag), z. B. für ein weiteres eigenes Gerät. */
+export async function getOwnPhoto(env: Env, c: Caller, id: string, url: URL) {
+  return getPhoto(env, c.personId, id, url);
+}
+
+async function getPhoto(env: Env, personId: string, id: string, url: URL) {
   const row = await env.DB.prepare(
     "SELECT r2_key, thumb_r2_key FROM photos WHERE id = ? AND person_id = ? AND expires_at > ?",
   )
-    .bind(id, c.partnerId, Date.now())
+    .bind(id, personId, Date.now())
     .first<{ r2_key: string; thumb_r2_key: string | null }>();
   if (!row) throw new HttpError(404, "Foto nicht gefunden oder abgelaufen");
   const key = url.searchParams.get("size") === "thumb" && row.thumb_r2_key ? row.thumb_r2_key : row.r2_key;

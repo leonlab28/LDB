@@ -19,27 +19,48 @@ export async function loadPartnerPhoto(api: Api, id: string, size: 'full' | 'thu
   return uri;
 }
 
-export function PhotoThumb({ api, id, hasThumb, seen, kept, onPress }: {
-  api: Api;
+export type PhotoLoader = (id: string, size: 'full' | 'thumb') => Promise<string>;
+
+/** Eigene Fotos laden, so wie der Partner sie sehen würde (für die Spiegel-Vorschau). */
+export async function loadOwnPhoto(api: Api, id: string, size: 'full' | 'thumb'): Promise<string> {
+  const hit = rememberedOwnPhoto(id, size);
+  if (hit) return hit;
+  const uri = dataUri(await api.ownPhoto(id, size));
+  cache.set(`own:${id}:${size}`, uri);
+  return uri;
+}
+
+/** Merkt sich ein eigenes, gerade hochgeladenes Foto für die Spiegel-Vorschau (nur Arbeitsspeicher, nur __DEV__). */
+export function rememberOwnPhoto(id: string, size: 'full' | 'thumb', bytes: Uint8Array) {
+  cache.set(`own:${id}:${size}`, dataUri(bytes));
+}
+
+export function rememberedOwnPhoto(id: string, size: 'full' | 'thumb'): string | null {
+  return cache.get(`own:${id}:${size}`) ?? cache.get(`own:${id}:full`) ?? null;
+}
+
+export function PhotoThumb({ load, id, hasThumb, seen, kept, onPress }: {
+  load: PhotoLoader;
   id: string;
   hasThumb: boolean;
   seen: boolean;
   kept: boolean;
   onPress: () => void;
 }) {
-  const [uri, setUri] = useState<string | null>(cache.get(`${id}:thumb`) ?? cache.get(`${id}:full`) ?? null);
+  const [uri, setUri] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    if (uri) return;
     let alive = true;
-    loadPartnerPhoto(api, id, hasThumb ? 'thumb' : 'full')
+    setUri(null);
+    setFailed(false);
+    load(id, hasThumb ? 'thumb' : 'full')
       .then((u) => alive && setUri(u))
       .catch(() => alive && setFailed(true));
     return () => {
       alive = false;
     };
-  }, [api, id, hasThumb, uri]);
+  }, [load, id, hasThumb]);
 
   return (
     <Pressable onPress={onPress} style={styles.box}>

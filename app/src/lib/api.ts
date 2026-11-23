@@ -169,13 +169,23 @@ export class Api {
 
   /** Lädt und entschlüsselt ein Foto des Partners. Wirft, wenn der Umschlag nicht passt. */
   async partnerPhoto(id: string, size: 'full' | 'thumb'): Promise<Uint8Array> {
-    const res = await this.call('GET', `/v1/partner/photos/${id}${size === 'thumb' ? '?size=thumb' : ''}`);
+    return this.photo('partner', id, size);
+  }
+
+  /** Lädt und entschlüsselt ein eigenes Foto (z. B. für die Spiegel-Vorschau). */
+  async ownPhoto(id: string, size: 'full' | 'thumb'): Promise<Uint8Array> {
+    return this.photo('me', id, size);
+  }
+
+  private async photo(who: 'me' | 'partner', id: string, size: 'full' | 'thumb'): Promise<Uint8Array> {
+    const res = await this.call('GET', `/v1/${who}/photos/${id}${size === 'thumb' ? '?size=thumb' : ''}`);
     const env = await res.bytes();
+    const owner = who === 'me' ? this.s.person : this.s.partner;
     try {
-      return openBytes(this.key, size === 'thumb' ? 'photo-thumb' : 'photo', this.s.partner, env, id);
+      return openBytes(this.key, size === 'thumb' ? 'photo-thumb' : 'photo', owner, env, id);
     } catch {
       // Ohne Vorschau liefert der Server das volle Bild aus.
-      return openBytes(this.key, 'photo', this.s.partner, env, id);
+      return openBytes(this.key, 'photo', owner, env, id);
     }
   }
 

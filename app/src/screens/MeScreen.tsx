@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NoteCard } from '../components/NoteCard';
+import { rememberOwnPhoto } from '../components/PhotoThumb';
 import { Body, Button, Card, Chip, Muted, Row, SectionTitle } from '../components/ui';
 import type { Api } from '../lib/api';
 import { b64 } from '../lib/bytes';
@@ -41,6 +42,8 @@ export function MeScreen({
   refreshing,
   onRefresh,
   onLogout,
+  mirror = false,
+  onMirrorChange,
 }: {
   api: Api;
   me: LdbView | null;
@@ -48,6 +51,8 @@ export function MeScreen({
   refreshing: boolean;
   onRefresh: () => void;
   onLogout: () => void;
+  mirror?: boolean;
+  onMirrorChange?: (on: boolean) => void;
 }) {
   const t = useTheme();
   const profile = me?.profile && me.profile !== 'locked' ? me.profile : null;
@@ -133,7 +138,8 @@ export function MeScreen({
         for (const asset of res.assets) {
           const full = await jpegFrom(asset.uri, 2048, asset, 0.8);
           const thumb = await jpegFrom(asset.uri, 360, asset, 0.6);
-          await api.uploadPhoto(full.bytes, thumb.bytes, { caption: text, width: full.width, height: full.height });
+          const id = await api.uploadPhoto(full.bytes, thumb.bytes, { caption: text, width: full.width, height: full.height });
+          if (__DEV__) rememberOwnPhoto(id, 'thumb', thumb.bytes);
           done++;
         }
       } catch (e) {
@@ -311,6 +317,20 @@ export function MeScreen({
             <Muted>Inhalte sind Ende-zu-Ende verschlüsselt. Der Server sieht nur Zeitpunkte und Größen.</Muted>
             <Button title="Abmelden" kind="danger" onPress={logout} />
           </Card>
+
+          {/* Nur in der Entwicklung (Expo Go) sichtbar, nie in der fertigen App. */}
+          {__DEV__ && onMirrorChange ? (
+            <>
+              <SectionTitle>Entwicklung</SectionTitle>
+              <Card>
+                <Muted>Vorschau: „Drüben“ zeigt deine eigenen Inhalte so, wie dein Freund sie sieht. Es wird nichts als gesehen markiert.</Muted>
+                <Row style={{ gap: 8 }}>
+                  <Chip label="Aus" selected={!mirror} onPress={() => onMirrorChange(false)} />
+                  <Chip label="Vorschau an" selected={mirror} onPress={() => onMirrorChange(true)} />
+                </Row>
+              </Card>
+            </>
+          ) : null}
           <Text style={{ color: t.muted, textAlign: 'center', fontSize: 12 }}>Person {me?.person ?? '–'}</Text>
         </ScrollView>
       </KeyboardAvoidingView>

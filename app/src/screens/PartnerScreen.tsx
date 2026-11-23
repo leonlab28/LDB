@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Image, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NoteCard } from '../components/NoteCard';
-import { loadPartnerPhoto, PhotoThumb } from '../components/PhotoThumb';
+import { loadOwnPhoto, loadPartnerPhoto, PhotoThumb } from '../components/PhotoThumb';
 import { Body, Button, Card, Locked, Muted, Row, SectionTitle } from '../components/ui';
 import type { Api } from '../lib/api';
 import { distanceKm } from '../lib/geo';
@@ -27,6 +27,7 @@ export function PartnerScreen({
   myTz,
   refreshing,
   onRefresh,
+  mirror = false,
 }: {
   api: Api;
   partner: LdbView | null;
@@ -34,21 +35,28 @@ export function PartnerScreen({
   myTz: string;
   refreshing: boolean;
   onRefresh: () => void;
+  /** Nur Entwicklung: zeigt die eigenen Inhalte so, wie der Partner sie sieht. Ohne Rückmeldungen an den Server. */
+  mirror?: boolean;
 }) {
   const t = useTheme();
   const now = useNow();
   const [openPhoto, setOpenPhoto] = useState<{ id: string; uri: string | null; kept: boolean } | null>(null);
   const markedNotes = useRef(new Set<string>());
+  const loadPhoto = useCallback(
+    (id: string, size: 'full' | 'thumb') => (mirror ? loadOwnPhoto(api, id, size) : loadPartnerPhoto(api, id, size)),
+    [api, mirror],
+  );
 
   // Post-its gelten als gesehen, sobald sie hier angezeigt werden.
   useEffect(() => {
+    if (mirror) return;
     for (const n of partner?.notes ?? []) {
       if (!n.seenAt && !markedNotes.current.has(n.id)) {
         markedNotes.current.add(n.id);
         api.markNoteSeen(n.id).catch(() => markedNotes.current.delete(n.id));
       }
     }
-  }, [api, partner?.notes]);
+  }, [api, mirror, partner?.notes]);
 
   if (!partner) {
     return (
@@ -69,9 +77,9 @@ export function PartnerScreen({
 
   async function showPhoto(id: string, hasThumb: boolean, kept: boolean, seen: boolean) {
     setOpenPhoto({ id, uri: null, kept });
-    if (!seen) api.markPhoto(id, 'seen').catch(() => {});
+    if (!seen && !mirror) api.markPhoto(id, 'seen').catch(() => {});
     try {
-      const uri = await loadPartnerPhoto(api, id, 'full');
+      const uri = await loadPhoto(id, 'full');
       setOpenPhoto((cur) => (cur?.id === id ? { ...cur, uri } : cur));
     } catch {
       if (hasThumb) setOpenPhoto(null);
@@ -81,6 +89,10 @@ export function PartnerScreen({
   return (
     <SafeAreaView style={[styles.fill, { backgroundColor: t.bg }]} edges={['top']}>
       <ScrollView contentContainerStyle={styles.wrap} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+        {mirror ? (
+          <Text style={[styles.mirror, { color: t.accent, borderColor: t.accent }]}>Vorschau: So sieht dein Freund deine Seite</Text>
+        ) : null}
+
         {/* Uhrzeit beim anderen */}
         <View style={styles.header}>
           <Muted>{partner.profile === 'locked' ? '🔒' : profile?.name || 'Partner'}</Muted>
@@ -156,7 +168,7 @@ export function PartnerScreen({
             {partner.photos.map((p) => (
               <PhotoThumb
                 key={p.id}
-                api={api}
+                load={loadPhoto}
                 id={p.id}
                 hasThumb={p.hasThumb}
                 seen={!!p.seenAt}
@@ -199,7 +211,7 @@ export function PartnerScreen({
                 title={openPhoto.kept ? '❤️ Behalten' : '🤍 Herz'}
                 kind="secondary"
                 onPress={() => {
-                  if (openPhoto.kept) return;
+                  if (openPhoto.kept || mirror) return;
                   api.markPhoto(openPhoto.id, 'keep').then(onRefresh).catch(() => {});
                   setOpenPhoto({ ...openPhoto, kept: true });
                 }}
@@ -214,6 +226,7 @@ export function PartnerScreen({
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
+  mirror: { borderWidth: 1, borderRadius: 12, padding: 8, textAlign: 'center', fontSize: 13, fontWeight: '600' },
   wrap: { padding: 16, gap: 12, paddingBottom: 32 },
   header: { alignItems: 'center', paddingVertical: 16, gap: 4 },
   clock: { fontSize: 64, fontWeight: '200', fontVariant: ['tabular-nums'] },
