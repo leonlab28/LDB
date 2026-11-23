@@ -5,7 +5,7 @@ import MapView, { Marker } from 'react-native-maps';
 import { PhotoImage } from '../components/PhotoThumb';
 import { Label, Sub, Tile } from '../design/Glass';
 import { Led } from '../design/Led';
-import { C, F, LAMP, LAMP_LABEL, NOTE_BG } from '../design/tokens';
+import { C, F, LAMP, LAMP_LABEL, NOTE_ACCENT } from '../design/tokens';
 import { distanceKm, roundCoord } from '../lib/geo';
 import { currentLight } from '../lib/light';
 import { pickAndSharePhotos } from '../lib/photos';
@@ -91,7 +91,7 @@ export function PhotosTile({ c, style }: TileProps) {
 // Ampel (schmal)
 // ---------------------------------------------------------------------------------------------
 
-export function Lamps({ state, size = 12 }: { state: LightState | null; size?: number }) {
+export function Lamps({ state, size = 11 }: { state: LightState | null; size?: number }) {
   const order: LightState[] = ['sleeping', 'busy', 'free'];
   return (
     <View style={styles.lamps}>
@@ -143,16 +143,17 @@ export function LightTile({ c, style }: TileProps) {
 
   return (
     <Tile style={style} onPress={isMe ? cycle : () => c.open('light')} onLongPress={isMe ? () => c.open('light') : undefined} label="Ampel">
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
-        <Lamps state={cur?.state ?? null} />
-        <View style={{ flex: 1 }}>
-          <Text style={styles.lightLabel} numberOfLines={1}>
-            {cur ? LAMP_LABEL[cur.state] : '–'} {cur?.state === 'busy' && raw?.emoji ? raw.emoji : ''}
+      <View style={styles.lightCol}>
+        <View style={styles.lightTop}>
+          <Lamps state={cur?.state ?? null} />
+          <Text style={styles.lightSub} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
+            {cur?.until ? `bis ${formatClock(cur.until, tz)}` : isMe && !cur ? 'tippen' : ''}
           </Text>
-          <Sub style={{ fontSize: 12 }}>
-            {cur?.until ? `bis ${formatClock(cur.until, tz)}` : raw?.note ? raw.note : isMe ? 'Tippen: wechseln' : cur ? 'offen' : 'kein Status'}
-          </Sub>
         </View>
+        <Text style={[styles.lightLabel, !cur && { color: C.fg3, fontSize: 13 }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+          {cur ? LAMP_LABEL[cur.state] : 'kein Status'}
+          {cur?.state === 'busy' && raw?.emoji ? ` ${raw.emoji}` : ''}
+        </Text>
       </View>
     </Tile>
   );
@@ -199,11 +200,13 @@ function PartnerVoiceTile({ c, style }: TileProps) {
         <Label>Sprache</Label>
         {v && !v.listenedAt ? <Dot color={C.alert} /> : null}
       </View>
-      <Led text={v ? mmss(meta?.duration_ms ?? 0) : '--:--'} size={18} />
-      <View style={[styles.playBtn, !v && { opacity: 0.3 }]}>
+      <Led text={v ? mmss(meta?.duration_ms ?? 0) : '--:--'} size={16} />
+      <View style={[styles.roundBtn, { backgroundColor: C.amber }, !v && { opacity: 0.3 }]}>
         <Text style={styles.playIcon}>{playing ? '■' : '▶'}</Text>
       </View>
-      <Sub style={{ fontSize: 11 }}>{v ? agoLabel(v.recordedAt, c.now) : 'noch keine'}</Sub>
+      <Text style={styles.voiceFoot} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+        {v ? agoLabel(v.recordedAt, c.now) : 'noch keine'}
+      </Text>
     </Tile>
   );
 }
@@ -231,11 +234,13 @@ function MyVoiceTile({ c, style }: TileProps) {
         <Label>Sprache</Label>
         {mine?.listenedAt ? <Text style={{ color: C.fg3, fontSize: 11 }}>✓ gehört</Text> : null}
       </View>
-      <Led text={recording ? mmss(elapsed) : mine ? mmss(meta?.duration_ms ?? 0) : '--:--'} size={18} color={recording ? C.lampRed : C.led} />
-      <View style={[styles.micBtn, recording && { transform: [{ scale: 1.12 }] }]}>
-        <Text style={{ fontSize: 18 }}>{rec.state === 'sending' ? '…' : '🎙'}</Text>
+      <Led text={recording ? mmss(elapsed) : mine ? mmss(meta?.duration_ms ?? 0) : '--:--'} size={16} color={recording ? C.lampRed : C.led} />
+      <View style={[styles.roundBtn, { backgroundColor: C.alert }, recording && { transform: [{ scale: 1.12 }] }]}>
+        <Text style={{ fontSize: 17 }}>{rec.state === 'sending' ? '…' : '🎙'}</Text>
       </View>
-      <Hint>{recording ? 'Loslassen: senden' : 'Halten: aufnehmen'}</Hint>
+      <Text style={styles.voiceFoot} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+        {recording ? 'loslassen: senden' : 'halten: aufnehmen'}
+      </Text>
     </Tile>
   );
 }
@@ -252,20 +257,38 @@ export function NotesTile({ c, style }: TileProps) {
 
   return (
     <Tile style={style} onPress={() => c.open('notes')} label="Post-its">
+      <View style={styles.tileHead}>
+        <Label>Post-its</Label>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          {unseen ? <Dot color={C.amber} /> : null}
+          {notes.length ? <Text style={styles.count}>{notes.length}</Text> : null}
+        </View>
+      </View>
       {top && body ? (
-        <View style={[styles.postit, { backgroundColor: NOTE_BG[body.color] ?? NOTE_BG.yellow }]}>
-          <Text style={styles.postitText} numberOfLines={5} adjustsFontSizeToFit minimumFontScale={0.7}>
-            {body.text}
-          </Text>
+        <View style={{ flex: 1, gap: 8, marginTop: 8 }}>
+          <View style={[styles.noteMain, { borderLeftColor: NOTE_ACCENT[body.color] ?? C.amber }]}>
+            <Text style={styles.noteText} numberOfLines={notes.length > 1 ? 3 : 5}>
+              {body.text}
+            </Text>
+          </View>
+          {notes.slice(1, 3).map((n) => {
+            const b = opened(n.body);
+            return (
+              <View key={n.id} style={styles.noteRow}>
+                <Dot color={b ? NOTE_ACCENT[b.color] : C.fg3} style={{ width: 6, height: 6 }} />
+                <Text style={styles.noteLine} numberOfLines={1}>
+                  {b ? b.text : '🔒'}
+                </Text>
+              </View>
+            );
+          })}
         </View>
       ) : (
         <View style={styles.center}>
-          <Text style={styles.photoPlus}>{c.mode === 'me' ? '＋' : '🗒'}</Text>
+          <Text style={styles.photoPlus}>{c.mode === 'me' ? '＋' : '–'}</Text>
           <Sub>{c.mode === 'me' ? 'Post-it schreiben' : 'Keine Post-its'}</Sub>
         </View>
       )}
-      {unseen ? <Dot color={C.alert} style={{ position: 'absolute', top: 10, right: 10 }} /> : null}
-      {notes.length > 1 ? <Text style={styles.more}>+{notes.length - 1}</Text> : null}
     </Tile>
   );
 }
@@ -334,30 +357,27 @@ export function MapTile({ c, style }: TileProps) {
       label="Standort"
     >
       {pos ? <MiniMap lat={pos.lat} lon={pos.lon} /> : <View style={[StyleSheet.absoluteFill, { backgroundColor: C.mapWater, opacity: 0.35 }]} />}
-      <LinearGradient colors={['rgba(8,10,28,0.55)', 'transparent', 'rgba(8,10,28,0.8)']} style={StyleSheet.absoluteFill} pointerEvents="none" />
+      {/* Text nur oben: unten links und rechts sitzen Apple-Logo und „Rechtliches“ der Karte. */}
+      <LinearGradient colors={['rgba(8,10,28,0.85)', 'rgba(8,10,28,0.25)', 'transparent']} locations={[0, 0.5, 1]} style={styles.mapShade} pointerEvents="none" />
       <View style={styles.mapInner} pointerEvents="none">
-        {km != null ? (
-          <View style={styles.badge}>
-            <Led text={km.toLocaleString('de-DE').replace(/\./g, '')} size={12} />
-            <Text style={styles.badgeUnit}>km</Text>
-          </View>
-        ) : (
-          <View />
-        )}
-        <View>
-          <Text style={styles.mapTitle} numberOfLines={1}>
-            {loc?.paused ? 'pausiert' : pos ? (isMe ? 'Geteilt' : 'Standort') : 'Kein Standort'}
-          </Text>
-          <Sub style={{ fontSize: 12 }}>
+        <View style={{ flexShrink: 1 }}>
+          <Label>{loc?.paused ? 'Pausiert' : isMe ? 'Mein Standort' : 'Standort'}</Label>
+          <Text style={styles.mapSub} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
             {busy
-              ? 'Teile …'
+              ? 'teile …'
               : c.view?.locationUpdatedAt && pos
                 ? agoLabel(c.view.locationUpdatedAt, c.now)
                 : isMe
-                  ? 'Tippen: jetzt teilen'
+                  ? 'tippen: jetzt teilen'
                   : 'noch nicht geteilt'}
-          </Sub>
+          </Text>
         </View>
+        {km != null ? (
+          <View style={styles.badge}>
+            <Led text={String(km)} size={11} />
+            <Text style={styles.badgeUnit}>km</Text>
+          </View>
+        ) : null}
       </View>
     </Tile>
   );
@@ -369,51 +389,51 @@ export function MapTile({ c, style }: TileProps) {
 
 export function CalendarTile({ c, style }: TileProps) {
   return (
-    <Tile style={style} onPress={() => c.open('calendar')} label="Kalender">
-      <Label>Als Nächstes</Label>
-      <View style={{ flex: 1, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8 }}>
-        <Sub lines={2} style={{ flex: 1 }}>
+    <Tile style={[style, styles.calendar]} onPress={() => c.open('calendar')} label="Kalender">
+      <View style={{ flex: 1, gap: 4 }}>
+        <Label>Als Nächstes</Label>
+        <Text style={styles.calText} numberOfLines={1}>
           Kalender kommt bald
-        </Sub>
-        <Led text="--:--" size={16} />
+        </Text>
       </View>
+      <Led text="--:--" size={16} />
     </Tile>
   );
 }
 
+// Einheitliche Maße für alle Kacheln: Innenabstand 12 (Glass.Tile), runde Knöpfe 40, Labels 10.5 Michroma.
+const BTN = 40;
+
 const styles = StyleSheet.create({
   hint: { color: C.fg3, fontSize: 10.5, marginTop: 2 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4 },
+  tileHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  count: { fontFamily: F.display, fontSize: 10.5, color: C.fg2, backgroundColor: C.glass2, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999, overflow: 'hidden' },
   photoShade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '55%' },
   photoEmpty: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', gap: 6 },
-  photoPlus: { color: C.fg2, fontSize: 26 },
-  photoFoot: { position: 'absolute', left: 14, right: 14, bottom: 12, gap: 2 },
-  photoCount: { fontFamily: F.display, fontSize: 14, color: C.fg },
+  photoPlus: { color: C.fg2, fontSize: 24 },
+  photoFoot: { position: 'absolute', left: 12, right: 12, bottom: 12, gap: 2 },
+  photoCount: { fontFamily: F.display, fontSize: 13, color: C.fg },
   lamps: { flexDirection: 'row', gap: 5, paddingHorizontal: 7, paddingVertical: 5, borderRadius: 999, backgroundColor: '#0b0d1a' },
-  lightLabel: { fontFamily: F.display, fontSize: 16, color: C.fg },
-  voice: { justifyContent: 'space-between', alignItems: 'flex-start', padding: 12 },
+  lightCol: { flex: 1, justifyContent: 'space-between' },
+  lightTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
+  lightSub: { flexShrink: 1, color: C.fg2, fontSize: 11 },
+  lightLabel: { fontFamily: F.display, fontSize: 15, color: C.fg },
+  voice: { justifyContent: 'space-between', alignItems: 'center' },
   voiceTop: { flexDirection: 'row', alignSelf: 'stretch', justifyContent: 'space-between', alignItems: 'center' },
-  playBtn: { position: 'absolute', right: 10, bottom: 10, width: 34, height: 34, borderRadius: 17, backgroundColor: C.amber, alignItems: 'center', justifyContent: 'center' },
-  playIcon: { color: '#1a1406', fontSize: 13, marginLeft: 2 },
-  micBtn: { position: 'absolute', right: 10, bottom: 22, width: 38, height: 38, borderRadius: 19, backgroundColor: C.alert, alignItems: 'center', justifyContent: 'center' },
-  postit: {
-    flex: 1,
-    padding: 10,
-    borderTopLeftRadius: 2,
-    borderTopRightRadius: 2,
-    borderBottomRightRadius: 12,
-    borderBottomLeftRadius: 2,
-    transform: [{ rotate: '-2.5deg' }],
-    shadowColor: '#000',
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 8 },
-  },
-  postitText: { fontFamily: F.hand, fontSize: 22, lineHeight: 24, color: C.noteInk },
-  more: { position: 'absolute', right: 10, bottom: 10, fontFamily: F.display, fontSize: 11, color: C.fg, backgroundColor: 'rgba(5,6,15,0.75)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, overflow: 'hidden' },
+  voiceFoot: { color: C.fg3, fontSize: 10.5, alignSelf: 'stretch', textAlign: 'center' },
+  roundBtn: { width: BTN, height: BTN, borderRadius: BTN / 2, alignItems: 'center', justifyContent: 'center' },
+  playIcon: { color: '#1a1406', fontSize: 14, marginLeft: 2 },
+  noteMain: { borderLeftWidth: 3, paddingLeft: 10, flexShrink: 1 },
+  noteText: { color: C.fg, fontSize: 15, lineHeight: 20 },
+  noteRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  noteLine: { flex: 1, color: C.fg2, fontSize: 13 },
   pin: { width: 14, height: 14, borderRadius: 7, backgroundColor: C.amber, borderWidth: 2, borderColor: '#fff' },
-  mapInner: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, padding: 12, justifyContent: 'space-between' },
-  badge: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(5,6,15,0.7)', paddingHorizontal: 9, paddingVertical: 5, borderRadius: 999 },
-  badgeUnit: { fontFamily: F.display, fontSize: 10, color: C.fg2 },
-  mapTitle: { fontFamily: F.display, fontSize: 15, color: C.fg },
+  mapShade: { position: 'absolute', left: 0, right: 0, top: 0, height: '60%' },
+  mapInner: { position: 'absolute', left: 0, right: 0, top: 0, padding: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
+  mapSub: { color: C.fg, fontSize: 13, marginTop: 4 },
+  badge: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(5,6,15,0.75)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
+  badgeUnit: { fontFamily: F.display, fontSize: 9.5, color: C.fg2 },
+  calendar: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  calText: { color: C.fg2, fontSize: 13 },
 });

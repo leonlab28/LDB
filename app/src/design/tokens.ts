@@ -38,6 +38,14 @@ export const NOTE_BG: Record<NoteColor, string> = {
   blue: '#b9dcff',
 };
 
+/** Post-it-Farbe als schmaler Akzent im Glas-Stil (kein Papier-Look). */
+export const NOTE_ACCENT: Record<NoteColor, string> = {
+  yellow: '#ffb547',
+  pink: '#ff8fab',
+  green: '#3ddc84',
+  blue: '#5ab0ff',
+};
+
 /** Ampel: grün frei, gelb busy, rot schläft. */
 export const LAMP: Record<LightState, string> = { free: C.lampGreen, busy: C.lampYellow, sleeping: C.lampRed };
 export const LAMP_LABEL: Record<LightState, string> = { free: 'frei', busy: 'busy', sleeping: 'schläft' };

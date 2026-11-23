@@ -1,5 +1,4 @@
 // Nur die benötigten Schnitte laden (der Paket-Index würde alle Gewichte mitbündeln).
-import { Caveat_700Bold } from '@expo-google-fonts/caveat/700Bold';
 import { Michroma_400Regular } from '@expo-google-fonts/michroma/400Regular';
 import { useFonts } from 'expo-font';
 import * as Localization from 'expo-localization';
@@ -28,7 +27,6 @@ export default function App() {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   const [fontsLoaded] = useFonts({
     Michroma: Michroma_400Regular,
-    Caveat: Caveat_700Bold,
     DSEG7: require('../assets/fonts/DSEG7Classic-Bold.ttf'),
   });
 
@@ -154,7 +152,7 @@ function Main({ session, onLogout }: { session: Session; onLogout: () => void })
     <View style={styles.corner}>
       {mode === 'me' ? (
         <Pressable onPress={() => setPopup('settings')} hitSlop={8} style={styles.gear} accessibilityLabel="Einstellungen">
-          <Text style={{ color: C.fg2, fontSize: 15 }}>⚙︎</Text>
+          <Text style={{ color: C.fg, fontSize: 18, marginTop: -1 }}>⚙︎</Text>
         </Pressable>
       ) : null}
       <View style={styles.switch}>
@@ -211,11 +209,11 @@ const styles = StyleSheet.create({
   error: { color: '#fff', backgroundColor: 'rgba(255,59,48,0.85)', padding: 8, borderRadius: 10, marginBottom: 6, fontSize: 13, overflow: 'hidden' },
   mirror: { color: C.amber, borderColor: C.amber, borderWidth: 1, borderRadius: 10, padding: 5, textAlign: 'center', fontSize: 12, marginBottom: 6, fontWeight: '600' },
   corner: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  gear: { width: 30, height: 30, borderRadius: 15, backgroundColor: C.glass2, alignItems: 'center', justifyContent: 'center' },
+  gear: { width: 34, height: 34, borderRadius: 17, backgroundColor: C.glass2, alignItems: 'center', justifyContent: 'center' },
   switch: { flexDirection: 'row', backgroundColor: C.glass, borderRadius: 999, padding: 3, borderWidth: StyleSheet.hairlineWidth, borderColor: C.hairline },
-  switchBtn: { paddingHorizontal: 11, paddingVertical: 5, borderRadius: 999 },
+  switchBtn: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999 },
   switchOn: { backgroundColor: C.glass2 },
-  switchText: { fontFamily: F.display, fontSize: 10.5, color: C.fg2 },
+  switchText: { fontFamily: F.display, fontSize: 11, color: C.fg2 },
   toast: { position: 'absolute', alignSelf: 'center', backgroundColor: 'rgba(238,240,255,0.95)', paddingHorizontal: 18, paddingVertical: 10, borderRadius: 999 },
   toastText: { color: C.space2, fontWeight: '600', fontSize: 14 },
 });
